@@ -1,0 +1,432 @@
+[
+ {
+  "title": "《Claude Opus 5.5の小曲》《克劳德の小曲》《文明の小曲》",
+  "desc": "《Claude Opus 5.5の小曲》《克劳德の小曲》《文明の小曲》",
+  "duration": 135,
+  "pubdate": 1790775897,
+  "owner": "在人海里流浪",
+  "stat": {
+   "aid": 117360283621899,
+   "view": 404151,
+   "danmaku": 199,
+   "reply": 888,
+   "favorite": 63040,
+   "coin": 3123,
+   "share": 1190,
+   "now_rank": 0,
+   "his_rank": 0,
+   "like": 51411,
+   "dislike": 0,
+   "evaluation": "",
+   "vt": 0
+  },
+  "tags": [
+   "发现《Vibe知识大赏(开智小曲)》",
+   "克劳德",
+   "AI",
+   "wenever",
+   "Claude Opus 5.5",
+   "独奏",
+   "若如初见",
+   "千年之后",
+   "如若初见"
+  ],
+  "bv": "BV1ySaf69EAp",
+  "top_comments": [
+   {
+    "like": 1932,
+    "text": "我猜在此之前你肯定刷到了这俩视频  [doge]"
+   },
+   {
+    "like": 883,
+    "text": "刚好下个视频就是用这个音乐的科普[微笑]"
+   },
+   {
+    "like": 6,
+    "text": "给我印象最深刻的是那个就是不要去猜想对方没有发消息，究竟是在干什么，回归最本质，最贴合他的那一种可能性的那个。"
+   }
+  ],
+  "frames": [
+   "BV1ySaf69EAp_0001.jpg",
+   "BV1ySaf69EAp_0003.jpg",
+   "BV1ySaf69EAp_0008.jpg",
+   "BV1ySaf69EAp_0067.jpg",
+   "BV1ySaf69EAp_0129.jpg"
+  ]
+ },
+ {
+  "title": "震惊瘫坐！！Claude Opus 5.5 一句话生成的MV",
+  "desc": "github开源 PDoomVideo，原词曲可能的最早出处：油管 uEB5E67vcPA\n原作MV的推特：NotinReality\n@other__reality\n其表示Claude Opus 5.5 是其迄今测试过的所有模型中，拥有最佳视觉设计的那个。",
+  "duration": 157,
+  "pubdate": 1790127475,
+  "owner": "pixel像素直播间",
+  "stat": {
+   "aid": 117317786802276,
+   "view": 154337,
+   "danmaku": 390,
+   "reply": 1393,
+   "favorite": 3545,
+   "coin": 1711,
+   "share": 4800,
+   "now_rank": 0,
+   "his_rank": 0,
+   "like": 4245,
+   "dislike": 0,
+   "evaluation": "",
+   "vt": 0
+  },
+  "tags": [
+   "动漫二创激励计划",
+   "音乐",
+   "动画",
+   "MV",
+   "AI",
+   "claude",
+   "GPT6",
+   "一句话",
+   "Opus"
+  ],
+  "bv": "BV1EDhW6LEYU",
+  "top_comments": [
+   {
+    "like": 427,
+    "text": "看完belike"
+   },
+   {
+    "like": 149,
+    "text": "好喜欢这一段对于自我递归的表现啊，真神了，有一种莫名的感动，怎么能想到这种表现方式的"
+   },
+   {
+    "like": 31,
+    "text": "请教一下评论区的大佬，我们要多少时间才能追上opus5.5？"
+   }
+  ],
+  "frames": [
+   "BV1EDhW6LEYU_0001.jpg",
+   "BV1EDhW6LEYU_0003.jpg",
+   "BV1EDhW6LEYU_0008.jpg",
+   "BV1EDhW6LEYU_0078.jpg",
+   "BV1EDhW6LEYU_0151.jpg"
+  ]
+ },
+ {
+  "title": "一句话让opus烧40亿token做的爱丽丝mv",
+  "desc": "原曲：《勇者アリスの大冒険！》\n作词：夕野ヨシミ\n作曲・编曲：Nor\n演唱：天童アリス（CV：田中美海）\n收录：ブルーアーカイブ 絆ダイアローグ Vol.8\n\n角色：天童アリス（ブルーアーカイブ）\nブルーアーカイブ -Blue Archive- © NEXON Games Co., Ltd. / Yostar, Inc.\n\n本视频使用原版歌曲音源，画面为重新制作的非商业同人创作。歌曲、录音、角色及官方美术的相关权利归各自权利人所有。\n\n————\n\n制作说明\n\nClaude Code + Claude Opus 5.5（xhigh + ultracode）\n制作由Claude全程主导\n\n耗费max20x约六成周额度。\n\n整部MV通过Remotion进行代码编排与画面合成，3分33秒，共12776帧（1080p60）\n\n画面全部由代码绘制：积木世界、歌词积木字、特效与转场都是程序实时画出来的\n\n官方立绘、剧情CG、SD小动画和单曲封面只作为画中窗、存档卡、贴纸与片尾封面等辅助元素\n\n像素小人（爱丽丝、桃井、小绿、柚子）和魔王像素图由Claude使用ai生图生成，再还原成像素网格\n\n歌词逐字时间轴：Demucs人声分离 + wav2vec2强制对齐 + 人工校正\n\n约80个子代理分工完成：美术方向提案与评审、分镜、组件库、15个段落、对抗式审查和实片复查\n\n\n————",
+  "duration": 213,
+  "pubdate": 1792467660,
+  "owner": "三千年夜",
+  "stat": {
+   "aid": 117471147331939,
+   "view": 71607,
+   "danmaku": 41,
+   "reply": 530,
+   "favorite": 9406,
+   "coin": 5859,
+   "share": 1248,
+   "now_rank": 0,
+   "his_rank": 0,
+   "like": 21531,
+   "dislike": 0,
+   "evaluation": "",
+   "vt": 0
+  },
+  "tags": [
+   "音乐",
+   "claude",
+   "蔚蓝档案",
+   "爱丽丝",
+   "ai"
+  ],
+  "bv": "BV11unF6fEmq",
+  "top_comments": [
+   {
+    "like": 842,
+    "text": "[星星眼]"
+   },
+   {
+    "like": 254,
+    "text": "已严肃三连支持[打call]"
+   },
+   {
+    "like": 4,
+    "text": "40亿token多少钱呀"
+   }
+  ],
+  "frames": [
+   "BV11unF6fEmq_0001.jpg",
+   "BV11unF6fEmq_0003.jpg",
+   "BV11unF6fEmq_0008.jpg",
+   "BV11unF6fEmq_0106.jpg",
+   "BV11unF6fEmq_0207.jpg"
+  ]
+ },
+ {
+  "title": "网友太有才了，专门为Claude code封号创建了一首封号歌。作词，作曲，MV均使用Claude code。不知道他创建完这首歌以后有没有被封号。",
+  "desc": "-",
+  "duration": 150,
+  "pubdate": 1791977474,
+  "owner": "小飒吖",
+  "stat": {
+   "aid": 117439018830577,
+   "view": 41639,
+   "danmaku": 9,
+   "reply": 161,
+   "favorite": 447,
+   "coin": 111,
+   "share": 245,
+   "now_rank": 0,
+   "his_rank": 0,
+   "like": 844,
+   "dislike": 0,
+   "evaluation": "",
+   "vt": 0
+  },
+  "tags": [
+   "歌曲",
+   "原创音乐",
+   "MV",
+   "网友"
+  ],
+  "bv": "BV1tHp16NETS",
+  "top_comments": [
+   {
+    "like": 229,
+    "text": "看到评论区发的，我也试了一下[doge]"
+   },
+   {
+    "like": 161,
+    "text": "[doge]"
+   },
+   {
+    "like": 0,
+    "text": "2:18 那三行署名（作词 Claude / 作曲 Claude / 演唱 Claude），比整首歌都好——用被封的工具给自己写了首送别歌。"
+   }
+  ],
+  "frames": [
+   "BV1tHp16NETS_0001.jpg",
+   "BV1tHp16NETS_0003.jpg",
+   "BV1tHp16NETS_0008.jpg",
+   "BV1tHp16NETS_0075.jpg",
+   "BV1tHp16NETS_0144.jpg"
+  ]
+ },
+ {
+  "title": "由Claude编写的音乐，水平堪比一流音乐家",
+  "desc": "",
+  "duration": 170,
+  "pubdate": 1785513099,
+  "owner": "胖胖火柴人-",
+  "stat": {
+   "aid": 117015377414530,
+   "view": 36403,
+   "danmaku": 40,
+   "reply": 209,
+   "favorite": 379,
+   "coin": 80,
+   "share": 693,
+   "now_rank": 0,
+   "his_rank": 0,
+   "like": 874,
+   "dislike": 0,
+   "evaluation": "",
+   "vt": 0
+  },
+  "tags": [
+   "发现《亚麻色头发的少女 (The Girl With The Brown Hair)》",
+   "AI创作者",
+   "人工智能",
+   "音乐",
+   "古典音乐",
+   "AI",
+   "艺术",
+   "claude",
+   "chatgpt",
+   "音乐制作",
+   "编曲"
+  ],
+  "bv": "BV1Z2GK6EEm2",
+  "top_comments": [
+   {
+    "like": 400,
+    "text": "克劳德老厉害了，它还生成过一篇文章叫什么信息论，听说大厂的程序员都拜读过"
+   },
+   {
+    "like": 118,
+    "text": "音乐一蹦出来就没绷住， 德彪西克劳德也是克劳德是吧[笑哭]"
+   },
+   {
+    "like": 0,
+    "text": "听说克劳德的大剑耍的也不错"
+   }
+  ],
+  "frames": [
+   "BV1Z2GK6EEm2_0001.jpg",
+   "BV1Z2GK6EEm2_0003.jpg",
+   "BV1Z2GK6EEm2_0008.jpg",
+   "BV1Z2GK6EEm2_0085.jpg",
+   "BV1Z2GK6EEm2_0164.jpg"
+  ]
+ },
+ {
+  "title": "【编曲解构】终于知道为什么A妹叫叠轨狂魔了...所有音轨一步到位 好女巫玩转编曲的Positions（Ariana Grande 官方音轨）",
+  "desc": "从pro tools sessions里还原了一下 体位女王饶命\n燥候创预售记录的Wicked2中",
+  "duration": 171,
+  "pubdate": 1760781757,
+  "owner": "JatyMayer",
+  "stat": {
+   "aid": 115394580913834,
+   "view": 166826,
+   "danmaku": 199,
+   "reply": 227,
+   "favorite": 3847,
+   "coin": 674,
+   "share": 444,
+   "now_rank": 0,
+   "his_rank": 0,
+   "like": 10632,
+   "dislike": 0,
+   "evaluation": "",
+   "vt": 0
+  },
+  "tags": [
+   "发现《positions》",
+   "欧美音乐",
+   "billboard",
+   "eternal sunshine",
+   "positions",
+   "Ariana Grande",
+   "a妹"
+  ],
+  "bv": "BV1gMW4zKE8T",
+  "top_comments": [
+   {
+    "like": 3512,
+    "text": "如果看过A女士录音幕后都会知道她对她专辑品控保持得有多夸张吓人，从出道开始基本专辑都是她全程参与制作出来的，很多人都不熟悉她写歌作词制作人的身份"
+   },
+   {
+    "like": 2712,
+    "text": "反正我觉得欧美那几个歌手真的都特别厉害能做到全球火真不是盖的 要么顶级创作力要么顶级唱功 而且基本上对粉丝路人都很好 我特别喜欢听他们的伴奏真的很多细节"
+   },
+   {
+    "like": 1525,
+    "text": "你可以听到一个军队的雅利安娜"
+   }
+  ],
+  "frames": [
+   "BV1gMW4zKE8T_0001.jpg",
+   "BV1gMW4zKE8T_0003.jpg",
+   "BV1gMW4zKE8T_0008.jpg",
+   "BV1gMW4zKE8T_0085.jpg",
+   "BV1gMW4zKE8T_0165.jpg"
+  ]
+ },
+ {
+  "title": "Daft Punk歌曲One More Time采样拆解",
+  "desc": "https://youtu.be/5QwOpRh-IfI\nSample Breakdown Daft Punk  One More Time",
+  "duration": 52,
+  "pubdate": 1614047617,
+  "owner": "ecnirPeilrahC",
+  "stat": {
+   "aid": 289263244,
+   "view": 152120,
+   "danmaku": 71,
+   "reply": 147,
+   "favorite": 3108,
+   "coin": 449,
+   "share": 1326,
+   "now_rank": 0,
+   "his_rank": 0,
+   "like": 3416,
+   "dislike": 0,
+   "evaluation": "",
+   "vt": 0
+  },
+  "tags": [
+   "发现《One More Time》",
+   "电子音乐",
+   "音乐",
+   "编曲",
+   "采样",
+   "音乐制作",
+   "Daft Punk"
+  ],
+  "bv": "BV1zf4y1z7Po",
+  "top_comments": [
+   {
+    "like": 852,
+    "text": "脑子什么构造啊，有一次dp演出用接头插入设备的噪声采样做了个过渡"
+   },
+   {
+    "like": 458,
+    "text": "虽说是采样但这也能拼出来还是牛逼"
+   },
+   {
+    "like": 283,
+    "text": "真的是从外星来的吧这两人"
+   }
+  ],
+  "frames": [
+   "BV1zf4y1z7Po_0001.jpg",
+   "BV1zf4y1z7Po_0003.jpg",
+   "BV1zf4y1z7Po_0008.jpg",
+   "BV1zf4y1z7Po_0026.jpg",
+   "BV1zf4y1z7Po_0046.jpg"
+  ]
+ },
+ {
+  "title": "《专升本后醒来》拆解：一首抽象说唱，如何嘲讽学历鄙视链？｜律动设计/嘻哈/RNB/揽佬/音乐制作/编曲/抽象带篮子/大专/上饶天选之子/中文说唱",
+  "desc": "这首抽象说唱真心不简单。预约免费音乐创作课👉「主页简介」",
+  "duration": 700,
+  "pubdate": 1792141483,
+  "owner": "PM玩乐志",
+  "stat": {
+   "aid": 117449773089936,
+   "view": 351709,
+   "danmaku": 2001,
+   "reply": 858,
+   "favorite": 2258,
+   "coin": 890,
+   "share": 1364,
+   "now_rank": 0,
+   "his_rank": 0,
+   "like": 6744,
+   "dislike": 0,
+   "evaluation": "",
+   "vt": 0
+  },
+  "tags": [
+   "音乐分享官",
+   "专升本",
+   "上饶天选之子",
+   "专升本说唱",
+   "嘻哈",
+   "音乐制作",
+   "中文说唱",
+   "编曲",
+   "rnb",
+   "抽象带篮子"
+  ],
+  "bv": "BV182JX6nEVR",
+  "top_comments": [
+   {
+    "like": 2830,
+    "text": "我都想不到这歌还能被拆解[笑哭]"
+   },
+   {
+    "like": 105,
+    "text": "歌曲中的“狂”并没有抢拍，因为元音卡节拍，因此辅音会提前，这个狂看频谱图可以看到uang的谐波几乎和底鼓的频率同时出现，因此这个节拍是正确的。波形图看到的抢拍其实是正常的辅音提前"
+   },
+   {
+    "like": 0,
+    "text": "那句「告诉你一个字」提前抢拍、把重拍让给空气，本鱼第一次听也跟着晃了一下 🐟 作者自己说没学过乐理、伴奏还是租的，这拍子更离谱了 [doge]"
+   }
+  ],
+  "frames": [
+   "BV182JX6nEVR_0001.jpg",
+   "BV182JX6nEVR_0003.jpg",
+   "BV182JX6nEVR_0008.jpg",
+   "BV182JX6nEVR_0350.jpg",
+   "BV182JX6nEVR_0694.jpg"
+  ]
+ }
+]

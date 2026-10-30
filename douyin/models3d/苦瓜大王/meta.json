@@ -1,0 +1,15 @@
+{
+ "name": "苦瓜大王",
+ "source": "D:\\cc-engine\\douyin\\uploads\\model3d\\image.png",
+ "kind": "relief",
+ "created": "2026-10-28T14:32:59",
+ "strength": 0.95,
+ "thickness": 0.09,
+ "smooth": 4.5,
+ "blender": "4.5.15",
+ "seconds": 10.9,
+ "size": [
+  637,
+  1016
+ ]
+}

@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>剪辑</title>
+<script src="/ui/settings.js"></script>
+<link rel="stylesheet" href="/ui/ui.css">
+<style>
+html, body { height: 100%; }
+body { overflow: hidden; }
+.page { height: 100%; display: grid; grid-template-columns: 236px 1fr 260px; transition: grid-template-columns .2s; }
+/* 打开工程后两侧栏收窄，把地方让给剪辑器；点栏顶的按钮展开/收起 */
+.page.slim-l { grid-template-columns: 64px 1fr 260px; }
+.page.slim-r { grid-template-columns: 236px 1fr 44px; }
+.page.slim-l.slim-r { grid-template-columns: 64px 1fr 44px; }
+.col h2 { display: flex; align-items: center; gap: 6px; }
+.col h2 span { flex: 1; overflow: hidden; white-space: nowrap; }
+.fold { flex: none; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 8px; background: none; color: var(--label-2);
+  font: inherit; cursor: pointer; }
+.fold:hover { background: var(--fill-2); color: var(--label); }
+.slim-l #left h2 span, .slim-l #left .hint, .slim-l #left .proj > span { display: none; }
+.slim-l #left h2 { padding: 18px 8px 10px; justify-content: center; }
+.slim-l #left .list { padding: 0 5px 14px; }
+.slim-l #left .proj { grid-template-columns: 1fr; padding: 4px; }
+.slim-r #right h2 span, .slim-r #right .hint, .slim-r #right .list { display: none; }
+.slim-r #right h2 { padding: 18px 8px 10px; justify-content: center; }
+.col { min-height: 0; display: flex; flex-direction: column; border-right: 1px solid var(--sep); }
+.col:last-child { border-right: 0; border-left: 1px solid var(--sep); }
+.col h2 { margin: 0; padding: 18px 16px 10px; font-size: calc(var(--fs) * 1.05); }
+.col .hint { padding: 0 16px 10px; font-size: calc(var(--fs) * .8); color: var(--label-2); }
+.list { flex: 1; overflow: auto; padding: 0 10px 14px; }
+.proj { display: grid; grid-template-columns: 54px 1fr; gap: 10px; align-items: center; width: 100%; padding: 8px;
+  border: 0; border-radius: 12px; background: none; color: inherit; text-align: left; cursor: pointer; font: inherit; }
+.proj:hover { background: var(--fill-2); }
+.proj.on { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.proj img { width: 54px; height: 54px; object-fit: cover; border-radius: 9px; background: var(--fill); }
+.proj b { display: block; font-size: calc(var(--fs) * .92); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.proj small { color: var(--label-2); font-size: calc(var(--fs) * .76); }
+.stage { position: relative; min-height: 0; background: var(--bg-2); }
+.stage iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.empty[hidden] { display: none; }
+.empty { position: absolute; inset: 0; z-index: 1; background: var(--bg-2); display: grid; place-items: center; color: var(--label-2); text-align: center; padding: 30px; }
+.step { position: relative; padding: 9px 12px 9px 26px; border-radius: 10px; font-size: calc(var(--fs) * .84); }
+.step::before { content: ""; position: absolute; left: 10px; top: 15px; width: 7px; height: 7px; border-radius: 50%; background: var(--label-3); }
+.step:first-child::before { background: var(--accent); }
+.step time { display: block; color: var(--label-2); font: calc(var(--fs) * .74) var(--mono); }
+.step p { margin: 2px 0 6px; word-break: break-all; }
+.step button { padding: 3px 10px; border: 0; border-radius: 999px; background: var(--fill); color: var(--label); font: inherit;
+  font-size: calc(var(--fs) * .76); cursor: pointer; }
+.exp { margin: 0 10px 10px; padding: 10px 12px; border-radius: 12px; background: var(--fill); font-size: calc(var(--fs) * .82); }
+.exp b { display: block; margin-bottom: 4px; }
+.exp .row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.exp .row span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--label-2); }
+.exp button { flex: none; padding: 3px 10px; border: 0; border-radius: 999px; background: var(--fill-2); color: var(--label); font: inherit; cursor: pointer; }
+.exp button.on { background: var(--accent); color: #fff; cursor: default; }
+.slim-r #right .exp { display: none; }
+.step button:hover { background: color-mix(in srgb, var(--accent) 30%, transparent); }
+</style>
+</head>
+<body>
+<div class="page">
+  <section class="col" id="left">
+    <h2><span>剪辑工程</span><button class="fold" id="foldL" type="button" title="收起/展开">⇤</button></h2>
+    <div class="hint">每条音轨成片都会自动生成一个工程</div>
+    <div class="list" id="projects"></div>
+  </section>
+  <section class="stage" id="stage">
+    <div class="empty" id="empty">从左边选一条成片，在这里用 OpenFilm 剪辑。<br>所有改动都会自动记录在右边，可以随时回到任何一步。</div>
+  </section>
+  <section class="col" id="right">
+    <h2><button class="fold" id="foldR" type="button" title="收起/展开">⇥</button><span>剪辑过程</span></h2>
+    <div class="exp" id="exports" hidden></div>
+    <div class="hint">每次改动自动保存一步（每秒检查一次）</div>
+    <div class="list" id="history"></div>
+  </section>
+</div>
+<script>
+let current = null;
+let studioUrl = null;     // 剪辑器的地址；切到别的页面时先卸载剪辑器（它在另一个端口，没法从这里暂停），回来再载入
+const page = document.querySelector(".page");
+function slim(side, on) {
+  page.classList.toggle("slim-" + side, on);
+  $(side === "l" ? "foldL" : "foldR").textContent = page.classList.contains("slim-" + side) ? (side === "l" ? "⇥" : "⇤") : (side === "l" ? "⇤" : "⇥");
+  try { localStorage.setItem("edit.slim-" + side, page.classList.contains("slim-" + side) ? "1" : ""); } catch (e) { /* 忽略 */ }
+}
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+async function api(path, body) {
+  const r = await fetch(path, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {});
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || "出错了");
+  return j;
+}
+
+async function loadProjects() {
+  const list = await api("/api/edit/projects");
+  $("projects").innerHTML = list.map((p) => `
+    <button class="proj${p.folder === current ? " on" : ""}" data-folder="${esc(p.folder)}" type="button" title="${esc(p.name)}">
+      ${p.cover ? `<img src="${p.cover}" alt="">` : "<img alt=\"\">"}
+      <span><b>${esc(p.name)}</b><small>${p.time} · ${p.steps} 步${p.edited ? " · 已导出" : ""}</small></span>
+    </button>`).join("") || '<div class="hint">还没有剪辑工程。音轨剪辑出片后会自动出现在这里。</div>';
+}
+
+// 剪辑器里「导出」出来的视频：选一个，发布台和每日发布就改用它（video_edited.mp4）
+async function loadExports() {
+  const box = $("exports");
+  if (!current) { box.hidden = true; return; }
+  const { exports, using_edited } = await api("/api/edit/exports?folder=" + encodeURIComponent(current));
+  box.hidden = false;
+  box.innerHTML = `<b>发布用哪个版本</b>
+    <div class="row"><span>原成片 video.mp4</span><button type="button" data-file="" class="${using_edited ? "" : "on"}">${using_edited ? "改回" : "使用中"}</button></div>
+    ${exports.slice(0, 5).map((x) => `<div class="row"><span title="${esc(x.name)}">${esc(x.name)} · ${x.time} · ${x.size}MB</span>
+      <button type="button" data-file="${esc(x.path)}" class="${x.used ? "on" : ""}">${x.used ? "使用中" : "发布用它"}</button></div>`).join("")
+    || '<div class="row"><span>在剪辑器右上角「导出」后，这里会出现剪辑版</span></div>'}`;
+}
+$("exports").addEventListener("click", async (e) => {
+  const b = e.target.closest("button[data-file]");
+  if (!b || b.classList.contains("on")) return;
+  await api("/api/edit/adopt", { folder: current, file: b.dataset.file });
+  loadExports(); loadProjects();
+});
+
+async function loadHistory() {
+  loadExports();
+  if (!current) { $("history").innerHTML = ""; return; }
+  const steps = await api("/api/edit/history?folder=" + encodeURIComponent(current));
+  $("history").innerHTML = steps.map((s, i) => `
+    <div class="step"><time>${s.time}</time><p>${esc(s.summary)}</p>
+      ${i ? `<button type="button" data-id="${s.id}">回到这一步</button>` : ""}</div>`).join("");
+}
+
+// 剪辑器画出来之前显示提示，不留白。它会在后台一直加载素材，load 事件来得很晚，所以最多等 4 秒
+function reveal(f) {
+  const done = () => { clearTimeout(reveal.t); $("empty").hidden = true; };
+  clearTimeout(reveal.t);
+  reveal.t = setTimeout(done, 4000);
+  f.addEventListener("load", done, { once: true });
+}
+
+async function open(folder) {
+  current = folder;
+  loadProjects();
+  $("empty").textContent = "正在启动剪辑器（第一次大约十几秒）…";
+  $("empty").hidden = false;
+  try {
+    const { url } = await api("/api/edit/open", { folder });
+    let f = $("stage").querySelector("iframe");
+    if (!f) { f = document.createElement("iframe"); f.allow = "clipboard-read; clipboard-write; fullscreen; autoplay"; $("stage").appendChild(f); }
+    $("empty").textContent = "正在打开剪辑器…";
+    f.src = studioUrl = url;
+    reveal(f);
+    slim("l", true);
+  } catch (e) { $("empty").textContent = e.message; }
+  loadHistory();
+}
+
+$("projects").addEventListener("click", (e) => { const b = e.target.closest(".proj"); if (b) open(b.dataset.folder); });
+$("history").addEventListener("click", async (e) => {
+  const b = e.target.closest("button[data-id]");
+  if (!b || !confirm("回到这一步？当前状态也会先记下来，之后还能再回来。")) return;
+  await api("/api/edit/restore", { folder: current, id: b.dataset.id });
+  loadHistory();
+});
+$("foldL").addEventListener("click", () => slim("l"));
+$("foldR").addEventListener("click", () => slim("r"));
+try { if (localStorage.getItem("edit.slim-r")) slim("r", true); } catch (e) { /* 忽略 */ }
+// 外壳切走「剪辑」页时：别的页面都会暂停自己的声音，剪辑器也要停，不然两边的声音叠在一起
+window.addEventListener("message", (e) => {
+  if (e.origin !== location.origin || !e.data) return;
+  const f = $("stage").querySelector("iframe");
+  if (!f || !studioUrl) return;
+  if (e.data.hidden) f.src = "about:blank";
+  if (e.data.shown && f.src !== studioUrl) {
+    $("empty").textContent = "正在打开剪辑器…"; $("empty").hidden = false;
+    f.src = studioUrl;
+    reveal(f);
+  }
+});
+loadProjects();
+setInterval(() => { if (!document.hidden) loadHistory(); }, 3000);
+</script>
+</body>
+</html>

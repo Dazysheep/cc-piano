@@ -1,0 +1,5 @@
+﻿<title>drawio 联调测试</title>
+<p>这是 drawio → lark-cli → 飞书云文档的联调测试。下图由 draw.io 桌面版从 .drawio 源文件导出为 PNG。</p>
+<img path="@./test-architecture.png" caption="测试架构图（drawio-skill 示例 hero-demo/v2）"/>
+<p>可编辑的源文件：</p>
+<source path="@./test-architecture.drawio" name="test-architecture.drawio"/>

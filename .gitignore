@@ -1,0 +1,138 @@
+# ============================================================
+# cc-piano .gitignore — 公开仓库，排除所有敏感和生成内容
+# ============================================================
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+*.egg
+.venv/
+venv/
+*.whl
+
+# --- Node ---
+node_modules/
+package-lock.json
+yarn.lock
+bun.lockb
+
+# --- IDE & tools ---
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# --- Next.js build cache ---
+.next/
+
+# --- OS ---
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# --- 临时文件 ---
+.tmp/
+
+# --- 大型工具和二进制（用户自行安装） ---
+douyin/tools/
+douyin/editor/
+douyin/.venv/
+filmlab/
+
+# --- 生成产物 ---
+douyin/output/
+douyin/assets/clawd/
+douyin/assets/handdrawn/
+douyin/assets/scenes/
+douyin/dist/
+douyin/待上传/
+douyin/收件箱/
+douyin/uploads/
+
+# --- 数据库 ---
+douyin/data/studio.db
+douyin/data/studio.db-wal
+douyin/data/studio.db-shm
+
+# --- 缓存 ---
+douyin/output/.cache/
+douyin/output/.render.lock
+douyin/tracks/cache_names.json
+
+# --- 敏感：浏览器登录态（绝对不能提交） ---
+douyin/publish/profile/
+workflow/learn/profile/
+
+# --- 敏感：飞书 CLI 令牌和配置 ---
+feishu/.lark-cli/
+
+# --- 敏感：配置文件（含 app_id / chat_id 等） ---
+workflow/config.json
+.mcp.json
+
+# --- 敏感：环境变量文件 ---
+.env
+.env.*
+!.env.example
+aihooklab/.env.local
+
+# --- 敏感：编辑器许可密钥 ---
+douyin/editor/home/key
+
+# --- 运营数据（含创作者中心真实数据、发布记录） ---
+workflow/data/
+workflow/reports/
+workflow/logs/
+workflow/llm-wiki/resource/auto-douyin-knowledges/raw/
+
+# --- 知识库审阅和分类数据 ---
+workflow/llm-wiki/resource/auto-douyin-knowledges/.llm-wiki/
+
+# --- 歌曲录屏和音频源文件（大文件） ---
+douyin/songs/*.mp3
+douyin/songs/*.wav
+douyin/songs/*.flac
+douyin/songs/*.mp4
+douyin/songs/*.mkv
+
+# --- 3D 模型生成产物 ---
+douyin/models3d/*.glb
+douyin/models3d/*.blend
+
+# --- PPT 生成产物 ---
+ppt/output/
+*.pptx
+
+# --- Claude Code 会话数据（不含 skills 和 hooks） ---
+.claude/projects/
+.claude/plans/
+.claude/todos/
+
+# --- 编剧输出版本和历史 ---
+douyin/output/writer/
+douyin/output/sections/
+douyin/output/lyricfilm/
+
+# --- 手绘帧缓存 ---
+douyin/handdrawn/songs/*/frames/
+
+# --- 视频/音频生成产物 ---
+douyin/cinematic/*/out/
+*.mp4
+*.mkv
+*.wav
+*.mp3
+*.flac
+
+# --- Blender 配置（含用户偏好） ---
+douyin/blender3d/home/
+
+# --- Task Scheduler 启动器和日志 ---
+workflow/tasks/*.cmd
+workflow/logs/

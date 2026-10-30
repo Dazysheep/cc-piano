@@ -1,0 +1,10 @@
+{
+  "name": "cc-engine-ppt",
+  "private": true,
+  "scripts": {
+    "ai-news": "node ai-news-2026-10-13.js"
+  },
+  "dependencies": {
+    "pptxgenjs": "^3.12.0"
+  }
+}

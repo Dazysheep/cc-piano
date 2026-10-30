@@ -1,0 +1,9 @@
+{
+ "feishu": {
+  "app_id": "<your-feishu-app-id>",
+  "ops_chat_id": "<your-feishu-chat-id>",
+  "ops_chat_name": "抖音运营",
+  "owner_open_id": "<your-feishu-open-id>"
+ },
+ "template": "daw@v6"
+}

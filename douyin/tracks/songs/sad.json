@@ -1,0 +1,148 @@
+{
+  "title": "SAD!",
+  "artist": "XXXTENTACION",
+  "audio": "D:\\cc-engine\\douyin\\收件箱\\2264901700.mov",
+  "template": "daw@v6",
+  "start": 2.0,
+  "douyin_title": "我让Claude读了SAD!的评论区：原来大家在听回忆",
+  "description": "《SAD!》，XXXTENTACION。\n\n我让 Claude 读了一遍这首歌的网易云评论区。一万七千多条留言里，有人说前奏里藏着宝马 i8 没系安全带的提示音，有人在和学校的好朋友分开时想起它，也有人说：很多时候不单单是在听曲子，而是在听回忆。\n\n把它拆成人声、贝斯和采样三条音轨听，那句 “Who am I? Someone that's afraid to let go” 一直在重复——害怕放手，大概每个人都有过这样的时刻。\n\n你现在怎样？评论区告诉我。",
+  "tags": [
+    "音轨拆解",
+    "SAD",
+    "XXXTENTACION",
+    "网易云音乐",
+    "Claude"
+  ],
+  "duration": 96,
+  "intro_from_library": false,
+  "final_image": "D:\\cc-engine\\workflow\\data\\produce\\2264901700\\cover.jpg",
+  "images": [],
+  "intro": 24.0,
+  "pace": 1.6,
+  "tracks_keep": [
+    "vocals",
+    "bass",
+    "other"
+  ],
+  "opening": {
+    "name": "office",
+    "comment": "……很多时候不单单是在听曲子，而是在听回忆。",
+    "vision": "alone_window"
+  },
+  "solos": [
+    {
+      "track": "other",
+      "from": 31.0,
+      "to": 36.4,
+      "label": "只听采样"
+    },
+    {
+      "track": "vocals",
+      "from": 37.4,
+      "to": 43.0,
+      "label": "只听人声"
+    },
+    {
+      "track": "bass",
+      "from": 66.0,
+      "to": 71.5,
+      "label": "只听贝斯"
+    }
+  ],
+  "moments": [
+    {
+      "kind": "question_mark",
+      "from": 37.4,
+      "to": 43.0
+    },
+    {
+      "kind": "rain_umbrella",
+      "from": 46.6,
+      "to": 52.6
+    },
+    {
+      "kind": "mend_heart",
+      "from": 56.4,
+      "to": 62.4
+    },
+    {
+      "kind": "hold_string",
+      "from": 75.8,
+      "to": 81.8
+    }
+  ],
+  "story": {
+    "acts": [
+      {
+        "name": "还在听",
+        "from": 31.0,
+        "to": 36.6,
+        "cards": [
+          {
+            "text": "前奏的那个声音是BMW i8没系安全带的提示音，包括真个beat都有这个声音的采样",
+            "track": "other",
+            "mood": "laugh"
+          }
+        ]
+      },
+      {
+        "name": "有品",
+        "from": 44.0,
+        "to": 46.4,
+        "cards": [
+          {
+            "text": "喜欢这个歌的女生是多有品啊",
+            "track": "vocals",
+            "mood": "shy",
+            "girl": "shy"
+          }
+        ]
+      },
+      {
+        "name": "分开",
+        "from": 53.5,
+        "to": 56.2,
+        "cards": [
+          {
+            "text": "在学校和认识的好朋友分开 belike：",
+            "track": "bass",
+            "mood": "nostalgic",
+            "vision": "farewell"
+          }
+        ]
+      },
+      {
+        "name": "怕放手",
+        "from": 62.8,
+        "to": 70.5,
+        "cards": [
+          {
+            "text": "我不知道离别的滋味是这样凄凉，我不知道说声再见要这么坚强",
+            "track": "vocals",
+            "solo": true,
+            "mood": "sad",
+            "vision": "alone_window"
+          }
+        ]
+      },
+      {
+        "name": "回忆",
+        "from": 73.4,
+        "to": 75.6,
+        "cards": [
+          {
+            "text": "26年还在听的是这个",
+            "track": "other",
+            "mood": "happy",
+            "vision": "small_flower"
+          }
+        ]
+      }
+    ],
+    "finale": {
+      "from": 82.0,
+      "text": "你现在怎样？",
+      "sub": "Who am I? Someone that's afraid to let go"
+    }
+  }
+}

@@ -1,0 +1,17 @@
+# 与 MIDI 同名的 .yaml 会被自动读取（例如 songs/lawrence.mid ↔ songs/lawrence.yaml）
+# 这个文件只是示例，复制后改名使用
+title: "Merry Christmas Mr. Lawrence"      # 画面左上角大标题(英文自动小型大写字母，中文用雅黑)
+subtitle: "Original : Ryuichi Sakamoto"    # 副标题
+corner_text: "Piano"                        # 左下角文字，可省略
+
+# 剪映草稿模式(--jianying)用；不填则用 piano/config.yaml 里 jianying 段的默认值
+watermark: "@你的账号"
+background: bg/snow.jpg                     # 背景图片或视频(相对本 yaml 的路径)
+bgm: bgm/rain.mp3                           # 背景音，会循环铺满并淡入淡出
+bgm_volume: 0.25
+draft_name: "第3集 圣诞快乐劳伦斯先生"        # 剪映里显示的草稿名，默认用 MIDI 文件名
+
+# 以下写进 publish.md，方便发布时复制
+douyin_title: "第3集：圣诞快乐劳伦斯先生 完整版"
+description: "睡前听一首，晚安。"
+tags: [钢琴, 助眠, 纯音乐, 坂本龙一]

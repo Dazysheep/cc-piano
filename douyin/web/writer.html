@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>编剧</title>
+<script src="/ui/settings.js"></script>
+<link rel="stylesheet" href="/ui/ui.css">
+<style>
+html, body { height: 100%; }
+body { overflow: hidden; }
+.page { height: 100%; display: grid; grid-template-columns: 220px minmax(0, 1fr) 400px; }
+.col { min-height: 0; display: flex; flex-direction: column; }
+.songs { border-right: 1px solid var(--sep); padding: 18px 10px; gap: 4px; overflow: auto; }
+.songs h2 { margin: 0 8px 12px; font-size: calc(var(--fs) * 1.1); }
+.songs h4 { margin: 16px 8px 6px; font-size: calc(var(--fs) * .78); color: var(--label-2); font-weight: 500; }
+.song { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border: 0; border-radius: 10px; background: none;
+  color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.song small { color: var(--label-2); font-size: calc(var(--fs) * .74); }
+.song:hover { background: var(--fill-2); }
+.song.on { background: color-mix(in srgb, var(--accent) 20%, transparent); }
+.inbox { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 6px 10px; font-size: calc(var(--fs) * .78); }
+.main { overflow: auto; padding: 18px; }
+.main h3 { margin: 0 0 4px; font-size: calc(var(--fs) * 1.05); }
+.hint { color: var(--label-2); font-size: calc(var(--fs) * .8); margin-bottom: 12px; line-height: 1.6; }
+.tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+.tab { padding: 6px 14px; border: 0; border-radius: 999px; background: var(--fill); color: var(--label); font: inherit;
+  font-size: calc(var(--fs) * .82); cursor: pointer; }
+.tab.on { background: var(--accent); color: #fff; }
+.story { margin-bottom: 14px; padding: 12px 14px; border-radius: 14px; background: var(--fill-2); }
+.story b { font-size: calc(var(--fs) * 1.02); }
+.story p { margin: 6px 0 0; color: var(--label-2); font-size: calc(var(--fs) * .84); }
+.nodes { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+.node { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 14px; background: var(--fill-2); }
+.node .pic { aspect-ratio: 16 / 10; border-radius: 10px; overflow: hidden; display: grid; place-items: center;
+  background: repeating-conic-gradient(#2a2a30 0 25%, #222228 0 50%) 0 / 16px 16px; }
+.node .pic img { max-width: 94%; max-height: 94%; image-rendering: pixelated; }
+.node .pic img.photo { width: 100%; height: 100%; object-fit: cover; image-rendering: auto; max-width: none; max-height: none; }
+.node .pic .new { color: #f0a46a; font-size: calc(var(--fs) * .78); text-align: center; padding: 10px; }
+.node .row { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+.node b { font-size: calc(var(--fs) * .9); }
+.node .t { font: calc(var(--fs) * .72) var(--mono); color: var(--label-2); }
+.node p { margin: 0; font-size: calc(var(--fs) * .82); line-height: 1.55; }
+.node q { display: block; color: var(--label-2); font-size: calc(var(--fs) * .76); line-height: 1.5; quotes: "「" "」"; }
+.badge { align-self: flex-start; padding: 1px 8px; border-radius: 999px; font-size: calc(var(--fs) * .7);
+  background: color-mix(in srgb, var(--accent) 25%, transparent); }
+.badge.new { background: color-mix(in srgb, #f0a46a 30%, transparent); }
+details { margin-top: 14px; }
+summary { cursor: pointer; color: var(--label-2); font-size: calc(var(--fs) * .84); }
+.plan { margin-top: 8px; font-size: calc(var(--fs) * .82); line-height: 1.7; }
+.plan li { margin-bottom: 2px; }
+.mat h4 { margin: 14px 0 6px; font-size: calc(var(--fs) * .88); }
+.mat .lines { font: calc(var(--fs) * .78)/1.6 var(--mono); color: var(--label-2); white-space: pre-wrap; max-height: 220px; overflow: auto;
+  padding: 8px 10px; border-radius: 10px; background: var(--fill-2); }
+.cm { display: grid; grid-template-columns: 22px 70px 1fr 26px; gap: 6px; align-items: start; margin-bottom: 6px; }
+.cm input[type=text], .cm textarea { width: 100%; box-sizing: border-box; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--sep);
+  background: var(--fill-2); color: var(--label); font: inherit; font-size: calc(var(--fs) * .8); }
+.cm textarea { resize: vertical; min-height: 34px; }
+.cm small { color: var(--label-2); font-size: calc(var(--fs) * .72); }
+.side { border-left: 1px solid var(--sep); padding: 16px; gap: 12px; overflow: auto; }
+.side h4 { margin: 4px 0 0; font-size: calc(var(--fs) * .86); }
+.btn { padding: 6px 12px; border: 0; border-radius: 999px; background: var(--fill); color: var(--label); font: inherit;
+  font-size: calc(var(--fs) * .8); cursor: pointer; white-space: nowrap; }
+.btn:hover { background: color-mix(in srgb, var(--accent) 28%, transparent); }
+.btn.primary { background: var(--accent); color: #fff; }
+.btn[disabled] { opacity: .45; cursor: default; }
+.line { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+select, .side textarea { padding: 7px 10px; border-radius: 10px; border: 1px solid var(--sep); background: var(--fill-2); color: var(--label);
+  font: inherit; font-size: calc(var(--fs) * .84); }
+.side textarea { width: 100%; box-sizing: border-box; resize: vertical; min-height: 56px; }
+.state { color: var(--label-2); font-size: calc(var(--fs) * .78); min-height: 1.2em; }
+.vers { display: flex; flex-direction: column; gap: 4px; }
+.ver { display: flex; gap: 8px; align-items: center; padding: 6px 8px; border: 0; border-radius: 10px; background: var(--fill-2);
+  color: inherit; font: inherit; text-align: left; cursor: pointer; font-size: calc(var(--fs) * .78); }
+.ver.on { outline: 1px solid var(--accent); }
+.ver b { font-family: var(--mono); }
+.ver span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ver i { font-style: normal; color: #6fcf8f; }
+.modal { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(0, 0, 0, .5); z-index: 9; }
+.modal[hidden] { display: none; }
+.modal > div { width: min(520px, 94vw); max-height: 90vh; overflow: auto; padding: 20px; border-radius: 18px; background: var(--bg-2);
+  border: 1px solid var(--sep); display: flex; flex-direction: column; gap: 10px; }
+.modal label { display: flex; flex-direction: column; gap: 4px; font-size: calc(var(--fs) * .82); color: var(--label-2); }
+.modal input, .modal select { padding: 8px 10px; border-radius: 10px; border: 1px solid var(--sep); background: var(--fill-2); color: var(--label); font: inherit; }
+.prof { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; background: var(--fill-2); font-size: calc(var(--fs) * .8); }
+.prof span { flex: 1; }
+.prof small { color: var(--label-2); }
+.empty { color: var(--label-2); padding: 40px 10px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="page">
+  <nav class="col songs" id="songs"><h2>编剧</h2></nav>
+  <section class="col main" id="main">
+    <h3 id="title">选一首歌</h3>
+    <div class="hint">根据这首歌的歌词、旋律和网易云评论编一条故事线：只列重要的动画节点（图 + 一句话）。动画都从动画库里挑（模型只挑名字，省 token），
+      库里没有的会标「需新做」，可以到「分段修改」里交给 Claude 画。编好了点「套用到视频」，再去「分段修改」预览、出整片。</div>
+    <div class="tabs"><button class="tab on" data-t="board" type="button">分镜</button><button class="tab" data-t="mat" type="button">素材（歌词 / 旋律 / 评论）</button></div>
+    <div id="board"><div class="empty">还没有编过。先看看「素材」里的评论对不对，再点右边「编一版」。</div></div>
+    <div id="mat" class="mat" hidden></div>
+  </section>
+  <aside class="col side">
+    <div class="line"><select id="prof"></select><button class="btn" id="profBtn" type="button">接口设置</button></div>
+    <div class="state" id="profState"></div>
+    <h4>编一版新的</h4>
+    <textarea id="hint" placeholder="（可选）你的想法，比如：这次想从「毕业散伙饭」切入；结尾温暖一点"></textarea>
+    <div class="line"><button class="btn primary" id="genBtn" type="button" disabled>编一版</button><span class="state" id="genState"></span></div>
+    <h4>版本</h4>
+    <div class="vers" id="vers"><div class="state">还没有</div></div>
+    <h4>按意见改这一版</h4>
+    <textarea id="fix" placeholder="比如：第二条评论换成更暖的；开头别用加班的夜；小动画少一个"></textarea>
+    <div class="line"><button class="btn" id="fixBtn" type="button" disabled>按意见改</button><span class="state" id="fixState"></span></div>
+    <h4>用到视频上</h4>
+    <div class="line"><button class="btn primary" id="applyBtn" type="button" disabled>套用到视频</button>
+      <button class="btn" id="kbBtn" type="button" disabled>写入知识库</button>
+      <a class="btn" id="toSections" href="/sections" target="_top" hidden>去分段修改</a></div>
+    <div class="state" id="applyState">套用会改这首歌的设置（开头评论、每条评论配的画面、小动画、结尾、标题文案），改之前自动存历史版本。
+      套用后 DeepSeek 会自动把这首歌写进知识库（歌曲档案 + 故事线台账 + 动画使用台账）；不套用也可以点「写入知识库」。</div>
+  </aside>
+</div>
+
+<div class="modal" id="profModal" hidden><div>
+  <b>编剧用的接口（可以存好几套，随时切换）</b>
+  <div id="profList"></div>
+  <b style="margin-top:6px">新增 / 修改</b>
+  <label>配置名（字母数字）<input id="pId" placeholder="比如 deepseek、kimi、claude"></label>
+  <label>显示名<input id="pName" placeholder="比如 DeepSeek"></label>
+  <label>接口类型<select id="pKind"><option value="openai">OpenAI 兼容（DeepSeek / 通义 / Kimi / 智谱 / 豆包 / OpenAI…）</option>
+    <option value="anthropic">Claude 原生（Anthropic）</option></select></label>
+  <label>接口地址<input id="pBase" placeholder="https://api.deepseek.com"></label>
+  <label>模型<input id="pModel" placeholder="deepseek-chat"></label>
+  <label>密钥（只存在你电脑的用户环境变量里，不显示、不写文件）<input id="pKey" type="password" placeholder="不改就留空"></label>
+  <div class="state" id="pState"></div>
+  <div class="line" style="justify-content:flex-end"><button class="btn" id="pClose" type="button">关闭</button>
+    <button class="btn primary" id="pSave" type="button">保存并选用</button></div>
+</div></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmt = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
+async function api(path, body) {
+  const r = await fetch(path, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {});
+  const j = await r.json();
+  if (!r.ok || j.error) { const e = new Error(j.error || "出错了"); e.code = r.status; throw e; }
+  return j;
+}
+async function poll(job, el) {
+  for (;;) {
+    await new Promise((ok) => setTimeout(ok, 1500));
+    const j = await api("/api/writer/job?id=" + job);
+    if (j.status === "done") return j.result;
+    if (j.status === "error") { const e = new Error(j.error); e.needKey = j.need_key; throw e; }
+    if (j.status === "missing") throw new Error("任务不见了（琴房重启过？）");
+    if (el) el.textContent = j.msg || "";
+  }
+}
+const TYPE_ZH = { opening: "开头小剧场", vision: "想象画面", moment: "小动画", girl: "女生动作", ending: "结尾小剧场", new: "需新做" };
+let ST = null, stem = null, MAT = null, ver = null, SC = null;
+
+function renderSongs() {
+  $("songs").innerHTML = "<h2>编剧</h2>" + ST.songs.map((s) =>
+    `<button class="song${s.stem === stem ? " on" : ""}" data-s="${esc(s.stem)}" type="button"><b>${esc(s.title)}</b>
+      <small>${esc(s.artist)} · 评论 ${s.comments} 条 · ${s.versions} 版剧本</small></button>`).join("") +
+    (ST.inbox.length ? "<h4>收件箱里的新录屏（导入后才能编剧）</h4>" + ST.inbox.map((i) =>
+      `<div class="inbox"><span>${esc(i.received || "")}<br><small>${esc(i.name)}</small></span>
+        <button class="btn" data-imp="${esc(i.message_id)}" type="button">导入</button></div>`).join("") : "");
+}
+function renderProfiles() {
+  const P = ST.profiles;
+  $("prof").innerHTML = P.profiles.map((p) => `<option value="${esc(p.id)}"${p.id === P.active ? " selected" : ""}>${esc(p.name)} · ${esc(p.model)}${p.has_key ? "" : "（没填密钥）"}</option>`).join("");
+  const a = P.profiles.find((p) => p.id === P.active);
+  $("profState").textContent = a ? `${a.kind === "anthropic" ? "Claude 原生接口" : "OpenAI 兼容接口"} · ${a.base_url}${a.has_key ? "" : " · 还没填密钥"}` : "还没有接口，点「接口设置」";
+  $("profList").innerHTML = P.profiles.map((p) => `<div class="prof"><span><b>${esc(p.name)}</b> <small>${esc(p.id)} · ${p.kind === "anthropic" ? "Claude 原生" : "OpenAI 兼容"} · ${esc(p.model)}<br>${esc(p.base_url)} · ${p.has_key ? "已填密钥" : "没填密钥"}</small></span>
+    <button class="btn" data-edit="${esc(p.id)}" type="button">改</button><button class="btn" data-del="${esc(p.id)}" type="button">删</button></div>`).join("") || '<div class="state">还没有</div>';
+}
+async function loadState() { ST = await api("/api/writer/state"); renderSongs(); renderProfiles(); }
+
+async function loadSong(s) {
+  stem = s; ver = null; SC = null;
+  renderSongs();
+  MAT = await api("/api/writer/materials?song=" + encodeURIComponent(stem));
+  $("title").textContent = `${MAT.song.title} · ${MAT.song.artist}`;
+  $("genBtn").disabled = false;
+  renderMat(); renderVers();
+  const last = MAT.versions.at(-1);
+  if (last) await showVersion(last.version);
+  else $("board").innerHTML = '<div class="empty">还没有编过。先看看「素材」里的评论对不对，再点右边「编一版」。</div>';
+}
+function renderVers() {
+  $("vers").innerHTML = MAT.versions.slice().reverse().map((v) =>
+    `<button class="ver${v.version === ver ? " on" : ""}" data-v="${v.version}" type="button"><b>v${v.version}</b><span>${esc(v.theme || v.logline || "")}</span>${v.applied ? "<i>已套用</i>" : ""}</button>`).join("") || '<div class="state">还没有</div>';
+  $("fixBtn").disabled = $("applyBtn").disabled = $("kbBtn").disabled = !ver;
+}
+async function showVersion(v) {
+  ver = v;
+  SC = await api(`/api/writer/version?song=${encodeURIComponent(stem)}&v=${v}`);
+  renderVers();
+  const P = SC.plan || {};
+  const nodes = (SC.nodes || []).map((n) => {
+    const a = n.anim || {}, isNew = a.type === "new";
+    const pic = n.img ? `<img src="${n.img}" alt=""${a.type === "opening" || a.type === "ending" ? ' class="photo"' : ""}>`
+      : `<div class="new">${isNew ? "需新做：" + esc(a.name) : "（没有预览图）"}</div>`;
+    return `<div class="node"><div class="pic">${pic}</div><div class="row"><b>${esc(n.title)}</b><span class="t">${esc(n.t)} · ${esc(n.part)}</span></div>
+      <span class="badge${isNew ? " new" : ""}">${TYPE_ZH[a.type] || a.type}${isNew ? "" : " · " + esc(a.name)}</span>
+      <p>${esc(n.text)}</p>${n.comment ? `<q>${esc(n.comment)}</q>` : ""}</div>`;
+  }).join("");
+  const u = SC.usage || {};
+  $("board").innerHTML = `<div class="story"><b>${esc(SC.theme)}</b><p>${esc(SC.logline)}</p>
+      <p>v${v}${SC.applied ? " · 已套用到视频" : ""} · ${esc(u.profile || "")} ${esc(u.model || "")} · 用了 ${u.input_tokens || 0} + ${u.output_tokens || 0} tokens</p></div>
+    <div class="nodes">${nodes || '<div class="empty">这一版没有节点</div>'}</div>
+    ${(SC.new_animations || []).length ? `<details open><summary>动画库里没有、建议新做的（可到「分段修改」交给 Claude）</summary><ul class="plan">${SC.new_animations.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></details>` : ""}
+    <details><summary>可出片的方案（套用时写进视频设置）</summary><ul class="plan">
+      <li>开头：${esc(P.opening?.scene)} · 第一帧评论「${esc(P.opening?.comment)}」</li>
+      ${(P.acts || []).map((a) => `<li>${fmt(a.from)}–${fmt(a.to)} ${esc(a.name)}：「${esc(a.comment)}」 · 画面 ${esc(a.vision || "无")} · 男生 ${esc(a.mood)} · 女生 ${esc(a.girl || "不反应")}${a.solo ? " · 独白" : ""}</li>`).join("")}
+      ${(P.moments || []).map((m) => `<li>小动画 ${esc(m.kind)}：${fmt(m.from)}–${fmt(m.to)}</li>`).join("")}
+      ${(P.solos || []).map((s) => `<li>${esc(s.label)}：${fmt(s.from)}–${fmt(s.to)}</li>`).join("")}
+      <li>尾声：${esc(P.finale?.text)} ${esc(P.finale?.sub)}</li>
+      <li>结尾：${esc(P.ending?.scene)} · 「${esc(P.ending?.question)}」</li>
+      <li>抖音标题：${esc(P.douyin_title)}</li><li>文案：${esc(P.description)}</li><li>话题：${(P.tags || []).map((t) => "#" + esc(t)).join(" ")}</li>
+    </ul></details>`;
+  $("toSections").hidden = !SC.applied;
+  $("toSections").href = "/app?tab=sections";
+}
+
+function renderMat() {
+  const m = MAT;
+  const lyr = m.lyrics.map((l) => `${fmt(l.t)}  ${l.text}`).join("\n") || "（没有歌词：导入时会用 AI 听写；也可以在「音轨剪辑」里贴歌词）";
+  const mel = m.melody.tempo ? `速度 ${m.melody.tempo} BPM\n` + m.melody.segments.join("\n") : "（还没有分析，先「导入」或在音轨剪辑里准备这首歌）";
+  $("mat").innerHTML = `<h4>歌词（视频时间）</h4><div class="lines">${esc(lyr)}</div>
+    <h4>旋律（每 6 秒：响度 · 在响的音轨）</h4><div class="lines">${esc(mel)}</div>
+    <h4>评论（打勾的才给编剧用；识别出来的可能有错字，请核对后再编）</h4>
+    <div class="line" style="margin-bottom:8px"><button class="btn" id="ocrBtn" type="button">识别录屏里的评论</button>
+      <button class="btn" id="addBtn" type="button">加一条</button><button class="btn primary" id="saveBtn" type="button">保存评论</button>
+      <span class="state" id="cmState"></span></div>
+    <div id="cms">${m.comments.map(cmRow).join("") || '<div class="state">还没有评论</div>'}</div>`;
+}
+function cmRow(c) {
+  return `<div class="cm"><input type="checkbox"${c.use !== false ? " checked" : ""}>
+    <div><input type="text" value="${esc(c.likes || "")}" placeholder="点赞"><small>${esc(c.user || "")}</small></div>
+    <textarea>${esc(c.text)}</textarea><button class="btn" data-rm type="button">✕</button></div>`;
+}
+function readComments() {
+  return [...document.querySelectorAll("#cms .cm")].map((r, i) => ({
+    use: r.querySelector("input[type=checkbox]").checked, likes: r.querySelector("input[type=text]").value,
+    user: (MAT.comments[i] || {}).user || r.querySelector("small")?.textContent || "", text: r.querySelector("textarea").value,
+    ocr: (MAT.comments[i] || {}).ocr }));
+}
+$("mat").addEventListener("click", async (e) => {
+  if (e.target.closest("[data-rm]")) { e.target.closest(".cm").remove(); return; }
+  if (e.target.id === "addBtn") { $("cms").insertAdjacentHTML("beforeend", cmRow({ text: "", use: true })); return; }
+  if (e.target.id === "saveBtn") {
+    try { const r = await api("/api/writer/comments", { song: stem, rows: readComments() }); MAT.comments = r.comments; renderMat(); $("cmState").textContent = `已保存 ${r.comments.length} 条`; }
+    catch (err) { $("cmState").textContent = err.message; }
+  }
+  if (e.target.id === "ocrBtn") {
+    e.target.disabled = true;
+    try { const r = await api("/api/writer/ocr", { song: stem }); const res = await poll(r.job, $("cmState")); MAT.comments = res.comments; renderMat(); $("cmState").textContent = `现在共 ${res.comments.length} 条`; }
+    catch (err) { $("cmState").textContent = err.message; e.target.disabled = false; }
+  }
+});
+
+$("genBtn").addEventListener("click", async () => {
+  $("genBtn").disabled = true; $("genState").textContent = "编剧中…";
+  try {
+    const r = await api("/api/writer/generate", { song: stem, profile: $("prof").value, hint: $("hint").value });
+    const res = await poll(r.job, $("genState"));
+    MAT = await api("/api/writer/materials?song=" + encodeURIComponent(stem));
+    await showVersion(res.version);
+    $("genState").textContent = `v${res.version} 好了（${res.usage.input_tokens} + ${res.usage.output_tokens} tokens）`;
+    await loadState();
+  } catch (err) { $("genState").textContent = err.message; if (err.needKey || err.code === 412) openProf(); }
+  $("genBtn").disabled = false;
+});
+$("fixBtn").addEventListener("click", async () => {
+  const msg = $("fix").value.trim();
+  if (!msg || !ver) { $("fixState").textContent = "先写要怎么改"; return; }
+  $("fixBtn").disabled = true; $("fixState").textContent = "改剧本中…";
+  try {
+    const r = await api("/api/writer/refine", { song: stem, version: ver, message: msg, profile: $("prof").value });
+    const res = await poll(r.job, $("fixState"));
+    MAT = await api("/api/writer/materials?song=" + encodeURIComponent(stem));
+    $("fix").value = "";
+    await showVersion(res.version);
+    $("fixState").textContent = `改好了，存为 v${res.version}`;
+  } catch (err) { $("fixState").textContent = err.message; if (err.needKey || err.code === 412) openProf(); }
+  $("fixBtn").disabled = false;
+});
+$("applyBtn").addEventListener("click", async () => {
+  if (!ver || !confirm(`把 v${ver} 套用到《${MAT.song.title}》的视频设置？（改之前自动存历史版本，在「分段修改」里能回到旧版）`)) return;
+  try {
+    const r = await api("/api/writer/apply", { song: stem, version: ver });
+    const msg = `已套用 v${ver}（套用前的设置存为历史 v${r.history}）。去「分段修改」预览每一块，满意了出整片。`;
+    $("applyState").textContent = msg + " 正在写知识库…";
+    MAT = await api("/api/writer/materials?song=" + encodeURIComponent(stem));
+    await showVersion(ver);
+    if (r.kb_job) poll(r.kb_job).then(() => { $("applyState").textContent = msg + " 已写入知识库。"; })
+      .catch((e) => { $("applyState").textContent = msg + " 知识库没写成：" + e.message; });
+  } catch (err) { $("applyState").textContent = err.message; }
+});
+$("kbBtn").addEventListener("click", async () => {                // 不套用，只把这一版写进知识库
+  if (!ver) return;
+  $("kbBtn").disabled = true; $("applyState").textContent = "DeepSeek 正在写这首歌的歌曲档案…";
+  try {
+    const r = await api("/api/writer/kb", { song: stem, version: ver });
+    const res = await poll(r.kb_job, $("applyState"));
+    $("applyState").textContent = "已写入知识库：" + res.page;
+  } catch (err) { $("applyState").textContent = err.message; }
+  $("kbBtn").disabled = false;
+});
+$("vers").addEventListener("click", (e) => { const b = e.target.closest(".ver"); if (b) showVersion(+b.dataset.v); });
+$("songs").addEventListener("click", async (e) => {
+  const imp = e.target.closest("[data-imp]");
+  if (imp) {
+    imp.disabled = true; imp.textContent = "导入中…";
+    try { const r = await api("/api/writer/import", { message_id: imp.dataset.imp }); const res = await poll(r.job, imp); await loadState(); await loadSong(res.stem); }
+    catch (err) { imp.textContent = "失败"; alert(err.message); }
+    return;
+  }
+  const b = e.target.closest(".song");
+  if (b) loadSong(b.dataset.s).catch((err) => { $("board").innerHTML = `<div class="empty">${esc(err.message)}</div>`; });
+});
+document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => {
+  document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("on", x === t));
+  $("board").hidden = t.dataset.t !== "board"; $("mat").hidden = t.dataset.t !== "mat";
+}));
+
+function openProf(p) {
+  p = p || ST.profiles.profiles.find((x) => x.id === $("prof").value) || {};
+  $("pId").value = p.id || ""; $("pName").value = p.name || ""; $("pKind").value = p.kind || "openai";
+  $("pBase").value = p.base_url || ""; $("pModel").value = p.model || ""; $("pKey").value = "";
+  $("pState").textContent = p.id ? (p.has_key ? `已经填过密钥（存在环境变量 ${p.key_env}）` : `还没有密钥（会存在环境变量 ${p.key_env}）`) : "";
+  $("profModal").hidden = false;
+}
+$("pKind").addEventListener("change", () => {
+  if ($("pKind").value === "anthropic" && !$("pBase").value) { $("pBase").value = "https://api.anthropic.com"; $("pModel").value = $("pModel").value || "claude-opus-5-5"; }
+});
+$("profBtn").addEventListener("click", () => openProf());
+$("pClose").addEventListener("click", () => { $("profModal").hidden = true; });
+$("pSave").addEventListener("click", async () => {
+  try {
+    ST.profiles = await api("/api/writer/profile", { id: $("pId").value.trim(), name: $("pName").value.trim(), kind: $("pKind").value,
+      base_url: $("pBase").value.trim(), model: $("pModel").value.trim(), key: $("pKey").value.trim(), activate: true });
+    renderProfiles(); $("profModal").hidden = true;
+  } catch (err) { $("pState").textContent = err.message; }
+});
+$("profList").addEventListener("click", async (e) => {
+  const ed = e.target.closest("[data-edit]"), del = e.target.closest("[data-del]");
+  if (ed) openProf(ST.profiles.profiles.find((p) => p.id === ed.dataset.edit));
+  if (del && confirm("删掉这个配置？（环境变量里的密钥不会删）")) { ST.profiles = await api("/api/writer/profile/delete", { id: del.dataset.del }); renderProfiles(); }
+});
+$("prof").addEventListener("change", async () => { ST.profiles = await api("/api/writer/profile/active", { id: $("prof").value }); renderProfiles(); });
+window.addEventListener("message", (e) => {
+  if (e.origin === location.origin && e.data && e.data.hidden) document.querySelectorAll("video").forEach((v) => v.pause());
+});
+loadState().then(() => {
+  const want = new URLSearchParams(location.search).get("song");
+  const first = (want && ST.songs.some((s) => s.stem === want)) ? want : (ST.songs[0] || {}).stem;
+  if (first) loadSong(first);
+  else $("board").innerHTML = '<div class="empty">还没有歌：左边「导入」收件箱里的录屏。</div>';
+}).catch((e) => { $("board").innerHTML = `<div class="empty">${esc(e.message)}</div>`; });
+</script>
+</body>
+</html>

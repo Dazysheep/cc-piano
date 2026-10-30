@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>拨片开头</title>
+<script>if (window.parent !== window) document.documentElement.classList.add("embed");</script>
+<script src="/ui/tilt3d.js"></script>
+<style>
+:root {
+  --velvet: #3a0f18; --velvet-deep: #22070d; --ebony: #1b1310;
+  --ivory: #efe6d2; --ivory-2: rgba(239, 230, 210, .64); --ivory-3: rgba(239, 230, 210, .48);
+  --brass: #b8924a; --brass-hi: #dcbd7f; --felt: #b43a3b; --rule: rgba(184, 146, 74, .28);
+  --display: "Bodoni Moda", "Didot", "Times New Roman", serif;
+  --text: "Noto Serif SC", "Source Han Serif SC", "SimSun", serif;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+}
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; color: var(--ivory); font: 400 16px/1.75 var(--text);
+  background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(220, 150, 110, .16), transparent 70%),
+              linear-gradient(180deg, var(--velvet) 0%, var(--velvet-deep) 100%) fixed; background-color: var(--velvet-deep); }
+.wrap { width: min(1240px, 100% - 32px); margin: 0 auto; }
+button, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--brass-hi); outline-offset: 3px; }
+.masthead { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding: 36px 0 22px; flex-wrap: wrap; }
+.wordmark { display: flex; align-items: baseline; gap: 18px; margin: 0; }
+.wordmark .zh { font: 600 44px/1 var(--text); letter-spacing: .12em; }
+.wordmark .la { font: italic 400 22px/1 var(--display); color: var(--brass-hi); }
+.mast-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--rule); background: transparent; color: var(--ivory); font-size: 15px; line-height: 1.2; text-decoration: none;
+  transition: background .25s var(--ease), border-color .25s var(--ease), transform .15s var(--ease); }
+.btn:hover { border-color: var(--brass); background: rgba(184, 146, 74, .1); }
+.btn:active { transform: scale(.97); }
+.btn[disabled] { opacity: .4; cursor: not-allowed; }
+.btn.primary { background: linear-gradient(180deg, var(--brass-hi), var(--brass)); color: var(--ebony); border-color: transparent; font-weight: 600; }
+
+.stage-shell { padding: 14px; border-radius: 18px; background: linear-gradient(180deg, #2a1d17, var(--ebony));
+  box-shadow: 0 1px 0 rgba(255,255,255,.06) inset, 0 30px 80px -30px rgba(0,0,0,.8); }
+.stage { position: relative; margin: 0 auto; aspect-ratio: 16 / 9; width: 100%; border-radius: 8px; overflow: hidden; background: #050505; transition: width .5s var(--ease); }
+.stage.vertical { aspect-ratio: 9 / 16; width: min(100%, calc(70vh * 9 / 16)); }
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.transport { display: flex; align-items: center; gap: 14px; padding: 14px 6px 2px; color: var(--ivory-2); font-size: 14px; }
+
+.desk { display: grid; grid-template-columns: 1fr 360px; gap: 44px; padding: 44px 0 80px; }
+h3 { display: flex; align-items: baseline; gap: 14px; margin: 0 0 16px; padding-bottom: 10px; border-bottom: 1px solid var(--rule); font: 600 20px/1.3 var(--text); letter-spacing: .08em; }
+h3 i { font: italic 400 30px/1 var(--display); color: var(--brass-hi); min-width: 36px; }
+.hint { font-size: 13px; color: var(--ivory-3); }
+
+.drop { display: grid; place-items: center; text-align: center; padding: 22px; margin-bottom: 18px; border: 1px dashed var(--rule); border-radius: 14px; cursor: pointer;
+  transition: border-color .25s var(--ease), background .25s var(--ease); }
+.drop:hover, .drop.over { border-color: var(--brass); background: rgba(184, 146, 74, .08); }
+.drop b { font-weight: 600; } .drop span { display: block; font-size: 13px; color: var(--ivory-3); }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 16px; list-style: none; padding: 0; margin: 0; }
+.card { position: relative; cursor: grab; border-radius: 12px; padding: 6px; background: rgba(27, 19, 16, .6); border: 1px solid transparent;
+  transition: transform .2s var(--ease), border-color .2s var(--ease), opacity .2s; }
+.card.dragging { opacity: .35; }
+.card.over { border-color: var(--brass-hi); transform: translateY(-2px); }
+.card.final { border-color: var(--brass); }
+.card img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 9px; pointer-events: none; }
+.card .idx { position: absolute; top: 12px; left: 12px; font: 600 12px/1 var(--display); padding: 4px 7px; border-radius: 999px; background: rgba(0,0,0,.6); }
+.card input { width: 100%; margin-top: 6px; padding: 2px 2px 4px; border: 0; border-bottom: 1px solid transparent; background: transparent; font-size: 13px; color: var(--ivory-2); outline: none; }
+.card input:focus { border-bottom-color: var(--brass-hi); color: var(--ivory); }
+.card .tools { position: absolute; top: 10px; right: 10px; display: flex; gap: 4px; }
+.card .tools button { width: 28px; height: 28px; border-radius: 50%; border: 0; cursor: pointer; background: rgba(0,0,0,.6); color: var(--ivory); font-size: 14px; line-height: 1; }
+.card .tools button:hover { background: rgba(0,0,0,.85); }
+.card.final .star { background: var(--brass); color: var(--ebony); }
+.final-tag { display: none; position: absolute; bottom: 44px; left: 12px; font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--brass); color: var(--ebony); font-weight: 600; }
+.card.final .final-tag { display: block; }
+
+.panel { position: sticky; top: 20px; align-self: start; padding: 24px; border-radius: 16px; background: linear-gradient(180deg, rgba(27,19,16,.92), rgba(27,19,16,.78)); border: 1px solid var(--rule); }
+.field { display: block; margin: 0 0 16px; }
+.field > span { display: block; font-size: 14px; color: var(--ivory-2); margin-bottom: 4px; }
+.field input[type=text] { width: 100%; padding: 6px 0 8px; border: 0; border-bottom: 1px solid var(--ivory-3); background: transparent; outline: none; }
+.field input[type=text]:focus { border-bottom-color: var(--brass-hi); }
+.slider { display: flex; align-items: center; gap: 12px; } .slider input { flex: 1; accent-color: var(--brass); }
+.slider output { font: 15px var(--display); min-width: 52px; text-align: right; color: var(--ivory-2); }
+.seg { display: inline-flex; padding: 3px; border-radius: 999px; border: 1px solid var(--rule); }
+.seg label { position: relative; } .seg input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.seg span { display: block; padding: 6px 16px; border-radius: 999px; font-size: 14px; color: var(--ivory-2); transition: background .25s, color .25s; }
+.seg input:checked + span { background: var(--ivory); color: var(--ebony); font-weight: 600; }
+.check { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--ivory-2); margin-bottom: 20px; }
+.check input { width: 18px; height: 18px; accent-color: var(--brass); }
+.panel .go { width: 100%; justify-content: center; padding: 12px; font-size: 16px; }
+.meter { margin-top: 18px; display: none; } .meter.on { display: block; }
+.staff { position: relative; height: 26px; }
+.staff::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(180deg, var(--ivory-3) 0 1px, transparent 1px 6px); }
+.fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; transition: width .5s var(--ease); background: repeating-linear-gradient(180deg, var(--brass-hi) 0 1px, transparent 1px 6px); }
+.status { display: flex; justify-content: space-between; margin-top: 8px; font-size: 14px; color: var(--ivory-2); }
+.result { margin-top: 18px; display: none; } .result.on { display: block; }
+.result video { width: 100%; border-radius: 10px; background: #000; display: block; }
+.result .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.where { font-size: 13px; color: var(--ivory-3); word-break: break-all; }
+.empty { color: var(--ivory-2); padding: 24px 0; }
+.toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; padding: 12px 20px; border-radius: 12px;
+  background: var(--ivory); color: var(--ebony); font-size: 15px; transition: opacity .3s, transform .3s; box-shadow: 0 12px 40px rgba(0,0,0,.5); }
+.toast.on { opacity: 1; transform: translate(-50%, 0); } .toast.err { background: var(--felt); color: #fff; }
+@media (max-width: 960px) { .desk { grid-template-columns: 1fr; } .panel { position: static; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; } }
+</style>
+<link rel="stylesheet" href="/glass.css">
+<script src="/ui/backtop.js"></script>
+<style>
+/* 一张专辑图里的多首歌：卡片上的 ≡ 按钮和选歌弹窗 */
+.card .tools .songs { font-size: 15px; font-weight: 700; }
+.card .tools .songs b { position: absolute; top: -5px; right: -5px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px;
+  font: 600 10px/16px var(--display); background: var(--brass-hi); color: #111; }
+.card .tools .songs { position: relative; }
+#songDlg { width: min(460px, 100% - 32px); padding: 22px; }
+#songDlg h4 { margin: 0 0 4px; font-size: 18px; }
+#songDlg .sub { margin: 0 0 16px; font-size: 13px; color: var(--ivory-3); }
+.song-list { display: grid; gap: 6px; max-height: 320px; overflow: auto; margin-bottom: 14px; }
+.song-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: rgba(255, 255, 255, .04);
+  border: 1px solid transparent; cursor: pointer; }
+.song-row:hover { background: rgba(255, 255, 255, .07); }
+.song-row.on { border-color: var(--brass-hi); background: rgba(164, 151, 255, .12); }
+.song-row input[type=radio] { accent-color: var(--brass); }
+.song-row .t { flex: 1; min-width: 0; }
+.song-row .t b { display: block; font-size: 14.5px; overflow-wrap: anywhere; }
+.song-row .t small { color: var(--ivory-3); font-size: 12.5px; }
+.song-row .x { border: 0; background: none; color: var(--ivory-3); cursor: pointer; font-size: 15px; padding: 2px 6px; border-radius: 6px; }
+.song-row .x:hover { color: var(--felt); background: rgba(255, 92, 120, .1); }
+.song-add { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; }
+.song-add input { padding: 8px 10px; border-radius: 10px; border: 1px solid var(--rule); background: rgba(0, 0, 0, .2); color: var(--ivory); outline: none; font-size: 13.5px; }
+.song-add input:focus { border-color: var(--brass-hi); }
+.song-add .btn { white-space: nowrap; }
+#songDlg .row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <h1 class="wordmark"><span class="zh">拨片开头</span><span class="la">Flick Intro</span></h1>
+    <div class="mast-actions">
+      <a class="btn" href="/">回到琴房</a>
+      <button class="btn" id="openDeliver" type="button">打开待上传文件夹</button>
+      <button class="btn" id="openJianying" type="button">打开剪映</button>
+    </div>
+  </header>
+
+  <section class="stage-shell" aria-label="开头预览">
+    <div class="stage" id="stage"><canvas id="canvas"></canvas></div>
+    <div class="transport">
+      <button class="btn" id="replay" type="button">重新播放预览</button>
+      <span id="previewInfo">预览与成片使用相同的动画节奏；成片另有运动模糊，更顺滑</span>
+    </div>
+  </section>
+
+  <main class="desk">
+    <section>
+      <h3><i>I</i>图库</h3>
+      <label class="drop" id="drop">
+        <input type="file" id="fileInput" accept="image/*" multiple hidden>
+        <div><b>添加图片</b><span>拖进来或点击选择，可多选。播放器截图会自动裁出封面，并认出歌名和歌手；同一张专辑的其他歌会加进这张图的歌曲列表</span></div>
+      </label>
+      <p class="hint">拖动卡片调整顺序，开头按这个顺序依次滑过；点 ★ 设为最后停留的图片（默认是最后一张）；有多首歌的专辑点 ≡ 选用哪一首。</p>
+      <ol class="cards" id="cards"></ol>
+    </section>
+
+    <aside class="panel" aria-live="polite">
+      <h3><i>II</i>生成</h3>
+      <label class="field"><span>标题（落定后显示在图片下方，可留空）</span><input type="text" id="title" placeholder="One More Light"></label>
+      <label class="field"><span>歌手</span><input type="text" id="artist" placeholder="Linkin Park"></label>
+      <label class="field"><span>时长</span>
+        <div class="slider"><input type="range" id="seconds" min="3" max="7" step="0.5" value="4"><output id="secondsOut">4.0 秒</output></div>
+      </label>
+      <div class="field"><span>画幅</span>
+        <div class="seg" role="radiogroup" aria-label="画幅">
+          <label><input type="radio" name="orient" value="h" checked><span>横屏 16:9</span></label>
+          <label><input type="radio" name="orient" value="v"><span>竖屏 9:16</span></label>
+        </div>
+      </div>
+      <label class="check"><input type="checkbox" id="draft" checked>同时生成剪映草稿</label>
+      <button class="btn primary go" id="go" type="button">生成开头</button>
+      <div class="meter" id="meter">
+        <div class="staff"><div class="fill" id="fill"></div></div>
+        <div class="status"><span id="stageText">排队中</span><span id="pctText">0%</span></div>
+      </div>
+      <div class="result" id="result">
+        <video id="video" controls playsinline preload="metadata"></video>
+        <div class="row">
+          <button class="btn" id="openFolder" type="button">打开所在文件夹</button>
+        </div>
+        <p class="where" id="where"></p>
+      </div>
+    </aside>
+  </main>
+</div>
+<dialog id="songDlg" aria-labelledby="songDlgTitle">
+  <h4 id="songDlgTitle">选择歌曲</h4>
+  <p class="sub" id="songDlgSub">这张专辑里的歌，选中的那首会显示在卡片和预览里</p>
+  <div class="song-list" id="songList"></div>
+  <div class="song-add">
+    <input type="text" id="songTitle" placeholder="歌名" aria-label="新歌名">
+    <input type="text" id="songArtist" placeholder="歌手" aria-label="新歌手">
+    <button class="btn" id="songAdd" type="button">添加</button>
+  </div>
+  <div class="row">
+    <button class="btn" id="songCancel" type="button">取消</button>
+    <button class="btn primary" id="songOk" type="button">使用这首</button>
+  </div>
+</dialog>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(() => {
+"use strict";
+const $ = (s) => document.querySelector(s);
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let lib = { items: [], final: null }, imgs = {};
+
+// ---------- 通用 ----------
+let toastTimer;
+function toast(msg, err = false) {
+  const el = $("#toast"); el.textContent = msg; el.classList.toggle("err", err); el.classList.add("on");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("on"), err ? 5000 : 2600);
+}
+async function api(path, opts = {}) {
+  const r = await fetch(path, opts);
+  const data = await r.json().catch(() => ({ error: "服务没有响应，确认琴房窗口还开着" }));
+  if (!r.ok || data.error) throw new Error(data.error || r.statusText);
+  return data;
+}
+const post = (path, body) => api(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+
+// ---------- 设置记忆 ----------
+try {
+  const s = JSON.parse(localStorage.getItem("flick.settings") || "{}");
+  ["title", "artist", "seconds"].forEach((k) => { if (s[k] != null) $("#" + k).value = s[k]; });
+  if (s.orient) document.querySelector(`input[name=orient][value="${s.orient}"]`).checked = true;
+  if (s.draft != null) $("#draft").checked = s.draft;
+} catch (e) { /* 忽略 */ }
+function remember() {
+  try {
+    localStorage.setItem("flick.settings", JSON.stringify({ title: $("#title").value, artist: $("#artist").value, seconds: $("#seconds").value,
+      orient: document.querySelector("input[name=orient]:checked").value, draft: $("#draft").checked }));
+  } catch (e) { /* 忽略 */ }
+}
+
+// ---------- 图库 ----------
+function renderCards() {
+  const box = $("#cards"); box.innerHTML = "";
+  if (!lib.items.length) { box.innerHTML = '<li class="empty">图库是空的。把播放器截图或图片拖到上面的框里。</li>'; return; }
+  lib.items.forEach((it, i) => {
+    const li = document.createElement("li");
+    li.className = "card" + (it.file === lib.final ? " final" : ""); li.draggable = true; li.dataset.file = it.file;
+    li.innerHTML = `<img alt=""><span class="idx"></span><span class="final-tag">最后停留</span>
+      <div class="tools"><button class="star" type="button" title="设为最后停留">★</button><button class="del" type="button" title="移出图库">✕</button></div>
+      <input type="text" aria-label="名称">`;
+    if ((it.songs || []).length >= 2) {      // 同一张专辑有多首歌：≡ 选择用哪一首
+      const sb = document.createElement("button");
+      sb.type = "button"; sb.className = "songs"; sb.title = `选择歌曲（共 ${it.songs.length} 首）`;
+      sb.innerHTML = `≡<b>${it.songs.length}</b>`;
+      sb.addEventListener("click", () => openSongs(it));
+      li.querySelector(".tools").prepend(sb);
+    }
+    li.querySelector("img").src = it.url; li.querySelector(".idx").textContent = i + 1;
+    const name = li.querySelector("input"); name.value = it.name;
+    name.addEventListener("change", () => save({ [it.file]: name.value.trim() || it.name }));
+    li.querySelector(".star").addEventListener("click", () => save(null, it.file));
+    li.querySelector(".del").addEventListener("click", () => {
+      if (!confirm(`把「${it.name}」移出图库？图片文件会被删除。`)) return;
+      lib.items = lib.items.filter((x) => x.file !== it.file); save();
+    });
+    li.addEventListener("dragstart", (e) => { li.classList.add("dragging"); e.dataTransfer.setData("text/flick", it.file); e.dataTransfer.effectAllowed = "move"; });
+    li.addEventListener("dragend", () => li.classList.remove("dragging"));
+    li.addEventListener("dragover", (e) => { if (e.dataTransfer.types.includes("text/flick")) { e.preventDefault(); li.classList.add("over"); } });
+    li.addEventListener("dragleave", () => li.classList.remove("over"));
+    li.addEventListener("drop", (e) => {
+      const from = e.dataTransfer.getData("text/flick"); li.classList.remove("over");
+      if (!from) return;
+      e.preventDefault(); e.stopPropagation();
+      const order = lib.items.map((x) => x.file); const a = order.indexOf(from), b = order.indexOf(it.file);
+      if (a < 0 || b < 0 || a === b) return;
+      const [moved] = lib.items.splice(a, 1); lib.items.splice(b, 0, moved); save();
+    });
+    box.appendChild(li);
+  });
+}
+function cacheImages() {
+  lib.items.forEach((it) => { if (!imgs[it.url]) { const im = new Image(); im.src = it.url; imgs[it.url] = im; } });
+}
+async function save(names = null, final = null) {
+  try {
+    lib = await post("/api/flick/update", { order: lib.items.map((x) => x.file), names, final });
+    cacheImages(); renderCards(); replay(); syncTitle();
+  } catch (e) { toast(e.message, true); load(); }
+}
+async function load() {
+  try { lib = await api("/api/flick/library"); cacheImages(); renderCards(); replay(); syncTitle(); } catch (e) { toast(e.message, true); }
+}
+async function addFiles(files) {
+  let added = 0, dup = 0, songs = 0, named = [];
+  for (const f of files) {
+    if (!f.type.startsWith("image/")) continue;
+    try {
+      toast(`正在导入并识别歌名：${f.name}`);
+      const r = await api("/api/upload?" + new URLSearchParams({ kind: "flick", name: f.name }), { method: "POST", body: f });
+      lib = r.library;
+      if (r.duplicate) { r.new_song ? songs++ : dup++; if (r.new_song) named.push(`《${r.song.title}》→ 已加进「${r.name}」的歌曲列表`); }
+      else { added++; if (r.song) named.push(`认出：${r.song.title}${r.song.artist ? " - " + r.song.artist : ""}`); }
+    } catch (e) { toast(`${f.name}：${e.message}`, true); }
+  }
+  cacheImages(); renderCards(); replay(); syncTitle();
+  const parts = [`已添加 ${added} 张`];
+  if (songs) parts.push(`${songs} 首歌加进了已有专辑（点 ≡ 选择）`);
+  if (dup) parts.push(`跳过重复 ${dup} 张`);
+  toast(parts.join("，") + (named.length ? "。" + named.slice(0, 2).join("；") : ""));
+}
+// ---------- 一张专辑里的多首歌 ----------
+const songOf = (it) => (it && it.songs && it.songs.length ? it.songs[Math.min(it.song || 0, it.songs.length - 1)] : null);
+function songText(it) {   // [歌名, 歌手]：优先用选中的那首，没有就从名称「歌名 - 歌手」拆
+  const s = songOf(it);
+  if (s) return [s.title, s.artist];
+  const [t, ...a] = (it ? it.name : "").split(" - ");
+  return [t || "", a.join(" - ")];
+}
+// 「标题 / 歌手」跟随图库里主图（★）的名称：换主图、改名、在 ≡ 里换歌时都会同步
+// （名称按「歌名 - 歌手」拆开；也可以在这里手动改，下次主图或名称变化时会重新跟随）
+function syncTitle() {
+  const fin = lib.items.find((x) => x.file === lib.final) || lib.items[lib.items.length - 1];
+  if (!fin) return;
+  const [t, a] = songText(fin);
+  const key = `${fin.file}|${t}|${a}`;
+  if (syncTitle.last === key) return;           // 主图和名称都没变：保留手动改过的内容
+  syncTitle.last = key;
+  $("#title").value = t; $("#artist").value = a;
+  remember();
+}
+let dlg = { it: null, songs: [], pick: 0 };
+function openSongs(it) {
+  dlg = { it, songs: (it.songs || []).map((s) => ({ ...s })), pick: it.song || 0 };
+  $("#songDlgSub").textContent = `「${it.name}」这张专辑里的歌，选中的那首会显示在卡片和预览里`;
+  drawSongs(); $("#songDlg").showModal();
+}
+function drawSongs() {
+  const box = $("#songList"); box.innerHTML = "";
+  dlg.songs.forEach((s, i) => {
+    const row = document.createElement("label");
+    row.className = "song-row" + (i === dlg.pick ? " on" : "");
+    row.innerHTML = `<input type="radio" name="songPick"><span class="t"><b></b><small></small></span><button class="x" type="button" title="从列表删除">✕</button>`;
+    row.querySelector("input").checked = i === dlg.pick;
+    row.querySelector("b").textContent = s.title;
+    row.querySelector("small").textContent = s.artist || "未知歌手";
+    row.querySelector("input").addEventListener("change", () => { dlg.pick = i; drawSongs(); });
+    row.querySelector(".x").addEventListener("click", (e) => {
+      e.preventDefault(); dlg.songs.splice(i, 1);
+      if (dlg.pick >= dlg.songs.length) dlg.pick = Math.max(0, dlg.songs.length - 1);
+      drawSongs();
+    });
+    box.appendChild(row);
+  });
+  if (!dlg.songs.length) box.innerHTML = '<p class="hint">还没有歌，在下面添加。</p>';
+}
+$("#songAdd").addEventListener("click", () => {
+  const t = $("#songTitle").value.trim(); if (!t) return $("#songTitle").focus();
+  dlg.songs.push({ title: t, artist: $("#songArtist").value.trim() }); dlg.pick = dlg.songs.length - 1;
+  $("#songTitle").value = ""; $("#songArtist").value = ""; drawSongs();
+});
+$("#songCancel").addEventListener("click", () => $("#songDlg").close());
+$("#songOk").addEventListener("click", async () => {
+  try {
+    lib = await post("/api/flick/songs", { file: dlg.it.file, songs: dlg.songs, pick: dlg.pick });
+    $("#songDlg").close(); cacheImages(); renderCards(); replay(); syncTitle();
+    const s = dlg.songs[dlg.pick]; if (s) toast(`已选用：${s.title}${s.artist ? " - " + s.artist : ""}`);
+  } catch (e) { toast(e.message, true); }
+});
+$("#fileInput").addEventListener("change", (e) => { addFiles([...e.target.files]); e.target.value = ""; });
+const drop = $("#drop");
+["dragenter", "dragover"].forEach((ev) => drop.addEventListener(ev, (e) => { if (e.dataTransfer.types.includes("Files")) { e.preventDefault(); drop.classList.add("over"); } }));
+["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, () => drop.classList.remove("over")));
+drop.addEventListener("drop", (e) => { e.preventDefault(); addFiles([...e.dataTransfer.files]); });
+document.addEventListener("dragover", (e) => { if (e.dataTransfer.types.includes("Files")) e.preventDefault(); });
+document.addEventListener("drop", (e) => { if (e.dataTransfer.files.length) { e.preventDefault(); addFiles([...e.dataTransfer.files]); } });
+
+// ---------- 预览动画（与 tracks/flick_intro.py 同一套曲线和时间点） ----------
+const U = [], P = [];
+(() => {   // 速度：0.025 内升到峰值，再按 (1-u)^4 衰减；位置 = 速度积分
+  const n = 2001; let acc = 0, prev = 0;
+  for (let i = 0; i < n; i++) {
+    const u = i / (n - 1), v = Math.min(1, u / 0.025) ** 2 * (1 - u) ** 4;
+    if (i) acc += (v + prev) / 2;
+    prev = v; U.push(u); P.push(acc);
+  }
+  for (let i = 0; i < n; i++) P[i] /= acc;
+})();
+function ease(u) { u = Math.min(Math.max(u, 0), 1); const i = Math.min(P.length - 2, Math.floor(u * (P.length - 1))); const f = u * (P.length - 1) - i; return P[i] + (P[i + 1] - P[i]) * f; }
+const canvas = $("#canvas"), ctx = canvas.getContext("2d");
+let t0 = performance.now();
+function replay() { t0 = performance.now(); }
+$("#replay").addEventListener("click", replay);
+function fit() {
+  const r = canvas.getBoundingClientRect(), d = Math.min(devicePixelRatio || 1, 2);
+  if (!r.width || !r.height) return;       // 页面被隐藏时保持原尺寸
+  canvas.width = r.width * d; canvas.height = r.height * d;
+}
+new ResizeObserver(fit).observe(canvas);
+
+function cardsForPreview() {   // 与渲染一致：主图放最后，其他按图库顺序；不足 5 张时用主图补齐
+  if (!lib.items.length) return [];
+  const finalIt = lib.items.find((x) => x.file === lib.final) || lib.items[lib.items.length - 1];
+  const others = lib.items.filter((x) => x !== finalIt).map((x) => imgs[x.url]);
+  while (others.length < 5) others.push(imgs[finalIt.url]);
+  return [...others, imgs[finalIt.url]];
+}
+function previewItems() {    // 与 cardsForPreview 一一对应的图库条目（用来显示每张卡片的歌名）
+  if (!lib.items.length) return [];
+  const finalIt = lib.items.find((x) => x.file === lib.final) || lib.items[lib.items.length - 1];
+  const others = lib.items.filter((x) => x !== finalIt);
+  while (others.length < 5) others.push(finalIt);
+  return [...others, finalIt];
+}
+function drawCover(img, x, y, w, h) {
+  const iw = img.naturalWidth, ih = img.naturalHeight; if (!iw) return;
+  const s = Math.max(w / iw, h / ih); ctx.drawImage(img, x + (w - iw * s) / 2, y + (h - ih * s) / 2, iw * s, ih * s);
+}
+function frame(now) {
+  if (window.shellHidden) return requestAnimationFrame(frame);    // 软件里切到别的页面时不画
+  const vertical = document.querySelector("input[name=orient]:checked").value === "v";
+  const VW = vertical ? 1080 : 1920, VH = vertical ? 1920 : 1080;
+  ctx.setTransform(canvas.width / VW, 0, 0, canvas.height / VH, 0, 0);
+  ctx.fillStyle = "#050505"; ctx.fillRect(0, 0, VW, VH);
+  const cards = cardsForPreview();
+  const seconds = +$("#seconds").value;
+  const t = ((now - t0) / 1000) % (seconds + 1.2);
+  if (cards.length && cards.every((im) => im && im.complete)) {
+    const n = cards.length, size = Math.min(VH * 0.6, VW * 0.78), spacing = size * 1.1, u = Math.min(VW, VH);
+    const move = Math.min(3.4, Math.max(2.5, 2.5 + 0.07 * (n - 6))), tDone = 0.12 + move * 0.72;
+    const pos = (n - 1) * ease((t - 0.12) / move), cx = VW / 2, cy = VH * 0.455;
+    const i0 = Math.min(n - 1, Math.floor(pos));
+    ctx.drawImage(blurredBg(cards[i0], VW, VH), -80, -80, VW + 160, VH + 160);
+    const hold = Math.min(1, Math.max(0, (t - tDone - 0.5) / Math.max(seconds - tDone - 0.5, 0.1)));
+    const breathe = 1 + 0.035 * (1 - (1 - hold) ** 2), settle = Math.min(1, Math.max(0, (t - tDone) / 0.6));
+    const order = [...cards.keys()].sort((a, b) => Math.abs(pos - b) - Math.abs(pos - a));
+    for (const i of order) {
+      const dlt = pos - i; if (Math.abs(dlt) > 2.2) continue;
+      const d = Math.min(Math.abs(dlt), 1.6);
+      const sc = (1 - 0.16 * d) * (Math.abs(dlt) < 0.5 ? breathe : 1);
+      const al = (1 - 0.55 * d / 1.6) * (i === n - 1 ? 1 : 1 - settle);
+      if (al <= 0.01) continue;
+      const s = size * sc, x = cx - s / 2, y = cy + dlt * spacing - s / 2;
+      ctx.save(); ctx.globalAlpha = al;
+      ctx.shadowColor = "rgba(0,0,0,.6)"; ctx.shadowBlur = 50; ctx.shadowOffsetY = 18;
+      ctx.beginPath(); ctx.roundRect(x, y, s, s, s * 0.07); ctx.fillStyle = "#000"; ctx.fill();
+      ctx.shadowColor = "transparent"; ctx.clip(); drawCover(cards[i], x, y, s, s); ctx.restore();
+    }
+    const title = $("#title").value.trim(), artist = $("#artist").value.trim();
+    const ta = Math.min(1, Math.max(0, (t - tDone - 0.4) / 0.7));
+    // 歌名浮现：滑到中间的那张卡片，歌名和歌手从下方浮上来（≡ 里选的那首）；最后一张落定后让位给下面的标题
+    {
+      const items = previewItems(), ni = Math.max(0, Math.min(n - 1, Math.round(pos)));
+      const near = Math.max(0, 1 - Math.abs(pos - ni) / 0.5);
+      const show = ni === n - 1 && title ? near * (1 - ta) : near;
+      const [st, sa] = songText(items[ni]);
+      if (show > 0.02 && st) {
+        const lift = (1 - show) * u * 0.03, maxW = vertical ? VW * 0.86 : VW - (cx + size / 2 + u * 0.07) - u * 0.05;
+        const fit = (txt, weight, px) => { let s = px; ctx.font = `${weight} ${s}px "Segoe UI Variable Display", "Segoe UI", "Microsoft YaHei UI", sans-serif`;
+          while (s > 14 && ctx.measureText(txt).width > maxW) { s *= 0.92; ctx.font = `${weight} ${s}px "Segoe UI Variable Display", "Segoe UI", "Microsoft YaHei UI", sans-serif`; } return s; };
+        ctx.save(); ctx.globalAlpha = show; ctx.shadowColor = "rgba(0,0,0,.55)"; ctx.shadowBlur = 18;
+        let x, y;
+        if (vertical) { ctx.textAlign = "center"; x = cx; y = cy + size / 2 + u * 0.13 + lift; }
+        else { ctx.textAlign = "left"; x = cx + size / 2 + u * 0.07; y = cy - u * 0.02 + lift;
+          ctx.fillStyle = "rgba(255,244,236,.85)"; ctx.fillRect(x, y - u * 0.075, u * 0.04, 3); }
+        ctx.fillStyle = "#fff4ec"; fit(st, 700, u * 0.05); ctx.fillText(st, x, y);
+        if (sa) { ctx.fillStyle = "rgba(236,200,186,.9)"; fit(sa, 400, u * 0.027); ctx.fillText(sa, x, y + u * 0.058); }
+        ctx.restore();
+      }
+    }
+    if (title && ta > 0) {
+      ctx.globalAlpha = ta; ctx.textAlign = "center"; ctx.fillStyle = "#fff4ec";
+      const ty = cy + size / 2 + u * 0.07 + (1 - ta) * 12;
+      ctx.font = `300 ${u * 0.05}px "Segoe UI Light", "Segoe UI", sans-serif`; ctx.fillText(title, cx, ty);
+      if (artist) { ctx.fillStyle = "rgba(236,200,186,.86)"; ctx.font = `${u * 0.026}px "Segoe UI", sans-serif`; ctx.fillText(artist, cx, ty + u * 0.055); }
+      ctx.globalAlpha = 1;
+    }
+    ctx.globalAlpha = 1;
+    $("#previewInfo").textContent = `${n} 张卡片，滑动 ${move.toFixed(1)} 秒后停在「${(lib.items.find((x) => x.file === lib.final) || {}).name || ""}」`;
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+// 背景虚化每张图只算一次（每帧做 40px 模糊非常耗 CPU，是预览卡顿的主要原因）
+const bgCache = new WeakMap();
+function blurredBg(img, VW, VH) {
+  const per = bgCache.get(img) || {};
+  bgCache.set(img, per);
+  let c = per[VW];
+  if (!c) {
+    c = per[VW] = document.createElement("canvas");
+    c.width = Math.round((VW + 160) / 4); c.height = Math.round((VH + 160) / 4);
+    const g = c.getContext("2d");
+    g.filter = "blur(10px) brightness(0.42)";
+    const s = Math.max(c.width / img.naturalWidth, c.height / img.naturalHeight);
+    const w = img.naturalWidth * s, h = img.naturalHeight * s;
+    g.drawImage(img, (c.width - w) / 2, (c.height - h) / 2, w, h);
+  }
+  return c;
+}
+window.addEventListener("message", (e) => {
+  if (e.origin === location.origin && e.data && (e.data.hidden || e.data.shown)) window.shellHidden = !!e.data.hidden;
+});
+
+// ---------- 设置 ----------
+const secOut = () => ($("#secondsOut").textContent = (+$("#seconds").value).toFixed(1) + " 秒");
+$("#seconds").addEventListener("input", () => { secOut(); remember(); replay(); });
+secOut();
+["#title", "#artist"].forEach((s) => $(s).addEventListener("change", remember));
+$("#draft").addEventListener("change", remember);
+document.querySelectorAll("input[name=orient]").forEach((r) => r.addEventListener("change", (e) => {
+  $("#stage").classList.toggle("vertical", e.target.value === "v"); remember(); replay();
+}));
+$("#stage").classList.toggle("vertical", document.querySelector("input[name=orient]:checked").value === "v");
+
+// ---------- 生成 ----------
+const STAGES = { queued: "排队中", frames: "渲染画面", draft: "生成剪映草稿", done: "完成" };
+$("#go").addEventListener("click", async () => {
+  if (!lib.items.length) return toast("图库是空的，请先添加图片", true);
+  remember();
+  try {
+    const { id } = await post("/api/flick/render", { title: $("#title").value.trim(), artist: $("#artist").value.trim(),
+      seconds: +$("#seconds").value, vertical: document.querySelector("input[name=orient]:checked").value === "v", draft: $("#draft").checked });
+    $("#go").disabled = true; $("#meter").classList.add("on"); $("#result").classList.remove("on");
+    poll(id);
+  } catch (e) { toast(e.message, true); }
+});
+async function poll(id) {
+  let job;
+  try { job = await api("/api/jobs/" + id); } catch (e) { return setTimeout(() => poll(id), 1500); }
+  const p = job.stage === "done" ? 1 : job.stage === "draft" ? 0.97 : (job.progress || 0) * 0.95;
+  $("#fill").style.width = (p * 100).toFixed(1) + "%"; $("#pctText").textContent = Math.round(p * 100) + "%";
+  $("#stageText").textContent = job.status === "failed" ? "生成失败" : STAGES[job.stage] || job.message;
+  if (job.status === "done") {
+    $("#go").disabled = false; const r = job.result;
+    $("#video").src = r.video_url; $("#video").poster = r.cover_url; $("#result").classList.add("on");
+    $("#openFolder").dataset.path = r.folder;
+    $("#where").textContent = `已保存到 ${r.folder}（滑动音效另存为 intro_sfx.wav）` + (r.draft ? "；剪映草稿已生成，开头和音效分两条轨道" : "");
+    return toast("开头已生成");
+  }
+  if (job.status === "failed") { $("#go").disabled = false; return toast(job.error || job.message || "生成失败", true); }
+  setTimeout(() => poll(id), 1000);
+}
+$("#openFolder").addEventListener("click", async (e) => { try { await post("/api/open", { path: e.currentTarget.dataset.path }); } catch (err) { toast(err.message, true); } });
+$("#openDeliver").addEventListener("click", async () => { try { await post("/api/open-deliver", {}); } catch (e) { toast(e.message, true); } });
+$("#openJianying").addEventListener("click", async () => { try { await post("/api/open-jianying", {}); toast("正在打开剪映"); } catch (e) { toast(e.message, true); } });
+load();
+// 图库卡片的 3D 悬停：跟随鼠标倾斜，歌名浮在图片上方（web/ui/tilt3d.js，拖拽排序时自动停用）
+window.Tilt3D.attach($("#cards"), ".card", { label: (el) => el.querySelector("input").value, top: "44%" });
+// 预览区滚出视野时出现「回到顶部」（web/ui/backtop.js）
+window.BackTop.attach($(".stage-shell"));
+})();
+</script>
+<!-- 生成按钮旁的「文件包」：拨片开头生成完会跳进去，悬停看最近的视频（web/ui/filebag.js） -->
+<script src="/ui/filebag.js"></script>
+<script>window.FileBag.attach("#go", { kinds: ["flick"] });</script>
+<!-- 生成进度卡（水位 = 进度，音符环绕；web/ui/waterprogress.js） -->
+<script src="/ui/waterprogress.js"></script>
+<script>window.WaterProgress.attach({ meter: "#meter", pct: "#pctText", stage: "#stageText" });</script>
+<!-- 文字操作按钮换成简化图标（web/ui/iconize.js） -->
+<script src="/ui/iconize.js"></script>
+<script>window.Iconize.apply([{ sel: ".mast-actions a[href=\"/\"]", icon: "home" }, { sel: "#openDeliver", icon: "folder", label: "打开视频文件夹" }, { sel: "#openJianying", icon: "jianying" }, { sel: "#openFolder", icon: "folder" }, { sel: "#replay", icon: "replay" }]);</script>
+</body>
+</html>

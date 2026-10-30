@@ -1,0 +1,117 @@
+{
+  "title": "rifle",
+  "artist": "key VS. locket",
+  "audio": "D:\\cc-engine\\douyin\\收件箱\\242342251.mov",
+  "template": "daw@v4",
+  "start": "auto",
+  "douyin_title": "把一首叫“步枪”的歌拆开，里面全是没打出去的子弹",
+  "description": "rifle，中文是步枪。\n\n把它拆成 6 条音轨听：吉他像放学路上的风，贝斯像一直没说出口的话，人声在唱 “I hope you can find the missing piece”。\n\n评论区九千多条留言里，有人在小县城数着高考倒计时，有人这个暑假终于和喜欢的人在一起了，有人只想安安静静做个普通人，也有人刚刚和很重要的人说了再见。\n\n我们好像都是缺了一块的拼图。愿你今晚找到属于你的那一块。",
+  "tags": [
+    "音轨拆解",
+    "rifle",
+    "中西部情绪",
+    "青春",
+    "编曲"
+  ],
+  "intro_from_library": true,
+  "story": {
+    "acts": [
+      {
+        "name": "上膛",
+        "from": 4.5,
+        "to": 17.5,
+        "cards": [
+          {
+            "text": "格子衫、匡威、大课间偷偷塞进耳朵的 mp3",
+            "track": "guitar",
+            "mood": "nostalgic"
+          },
+          {
+            "text": "有时我也会变成一支上膛的步枪。可外面下雨了，我的火药受潮了，哈哈",
+            "track": "mix",
+            "mood": "laugh"
+          },
+          {
+            "text": "评论区早就被文案淹没了，可这就是我们的青春啊",
+            "track": "vocals",
+            "mood": "shy"
+          }
+        ]
+      },
+      {
+        "name": "哑火",
+        "from": 18.0,
+        "to": 38.5,
+        "cards": [
+          {
+            "text": "大家能理一下我吗？我很孤独",
+            "track": "vocals",
+            "solo": true,
+            "mood": "lonely"
+          },
+          {
+            "text": "我普通的生活，也是我努力经营出来的啊",
+            "track": "bass",
+            "solo": true,
+            "mood": "angry"
+          },
+          {
+            "text": "你有同时牵过爸爸妈妈的手吗",
+            "track": "piano",
+            "solo": true,
+            "mood": "nostalgic"
+          },
+          {
+            "text": "想忘掉一个人，可最后一发子弹，叫思念",
+            "track": "other",
+            "solo": true,
+            "mood": "sad"
+          }
+        ]
+      },
+      {
+        "name": "拼图",
+        "from": 39.0,
+        "to": 54.5,
+        "cards": [
+          {
+            "text": "距离高考还有 295 天，这一年我想拼一次",
+            "track": "guitar",
+            "mood": "hope"
+          },
+          {
+            "text": "这个暑假，我和喜欢的人在一起了！",
+            "track": "vocals",
+            "mood": "love"
+          },
+          {
+            "text": "县城是生我养我的地方，我一辈子都不会嫌弃它",
+            "track": "bass",
+            "mood": "nostalgic"
+          },
+          {
+            "text": "23 岁，旅途结束，听着这首歌回家，有种淡淡的幸福",
+            "track": "piano",
+            "mood": "happy"
+          },
+          {
+            "text": "只要还抓着一些细小的美好，就还有希望",
+            "track": "other",
+            "mood": "hope"
+          },
+          {
+            "text": "夏天结束了，下个夏天我们再见",
+            "track": "mix",
+            "mood": "happy"
+          }
+        ]
+      }
+    ],
+    "finale": {
+      "from": 55.2,
+      "text": "愿你找到缺的那一块",
+      "sub": "I hope you can find the missing piece"
+    }
+  },
+  "intro_final": "027.jpg"
+}

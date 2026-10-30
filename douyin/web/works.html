@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>作品集</title>
+<script src="/ui/settings.js"></script>
+<script src="/ui/filmsound.js"></script>
+<script src="/ui/tilt3d.js"></script>
+<link rel="stylesheet" href="/ui/ui.css">
+<style>
+html, body { height: 100%; }
+body { overflow: hidden; }
+/* 背景：当前作品封面强虚化，两层交替淡入淡出 */
+.bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.bg i { position: absolute; inset: -12%; background: center / cover no-repeat; opacity: 0; filter: blur(var(--bgblur, 60px)) saturate(1.25);
+  transform: scale(1.08); transition: opacity calc(var(--t) * 2.2) var(--ease); will-change: opacity; }
+.bg i.on { opacity: .55; }
+[data-theme="light"] .bg i.on { opacity: .42; }
+.bg::after { content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--bg) 70%, transparent), color-mix(in srgb, var(--bg) 25%, transparent) 55%, color-mix(in srgb, var(--bg) 55%, transparent)); }
+
+.page { position: relative; z-index: 1; height: 100%; display: grid; grid-template-rows: auto 1fr; padding: 0 32px; }
+.headline { padding-top: 22px; padding-bottom: 12px; }
+.search { width: 190px; min-height: 34px; padding: 6px 14px; border-radius: 999px; }
+
+/* ---------- 半弧形胶片 ---------- */
+.arcview { position: relative; display: grid; grid-template-columns: minmax(250px, 30%) 1fr; gap: 24px; min-height: 0; padding-bottom: 22px; }
+.reel { position: relative; min-height: 0; overflow: hidden; outline: none; touch-action: none;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 14%, #000 86%, transparent); mask-image: linear-gradient(180deg, transparent, #000 14%, #000 86%, transparent); }
+.frame { position: absolute; left: 0; top: 50%; width: var(--cw, 236px); aspect-ratio: 16 / 9; margin-top: calc(var(--cw, 236px) * -9 / 32);
+  border: 0; padding: 0; border-radius: 12px; cursor: pointer; background: var(--fill-2) center / cover no-repeat; will-change: transform, opacity;
+  box-shadow: 0 14px 30px -16px rgba(0, 0, 0, .9), inset 0 0 0 .5px rgba(255, 255, 255, .12); }
+.frame::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: #000; opacity: var(--dim, 0); }
+.frame::after { content: ""; position: absolute; left: 7%; right: 7%; top: -6px; height: 3px; border-radius: 2px;   /* 胶片齿孔 */
+  background: repeating-linear-gradient(90deg, rgba(255, 255, 255, .28) 0 6px, transparent 6px 13px); opacity: var(--holes, .6); }
+.frame.sel { box-shadow: 0 18px 40px -16px rgba(0, 0, 0, .95), 0 0 0 2px var(--accent); }
+.frame .k { position: absolute; left: 8px; bottom: 7px; padding: 1px 7px; border-radius: 6px; font-size: 11px; font-weight: 600; color: #fff; background: rgba(0, 0, 0, .5); }
+.reel-hint { position: absolute; left: 0; bottom: 4px; font-size: calc(var(--fs) * .8); color: var(--label-3); }
+
+.stage { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 16px; min-height: 0; align-content: center; }
+.screen { position: relative; align-self: center; justify-self: center; width: min(100%, calc((100vh - 290px) * 16 / 9)); aspect-ratio: 16 / 9;
+  border-radius: 20px; overflow: hidden; background: #000 center / cover no-repeat; box-shadow: 0 40px 90px -40px rgba(0, 0, 0, 1), 0 0 0 .5px var(--sep);
+  transition: transform var(--t) var(--ease), opacity var(--t); }
+.moving .screen { transform: scale(.985); opacity: .82; }
+.screen video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; opacity: 0; transition: opacity var(--t); }
+.screen video.on { opacity: 1; }
+.screen .play { position: absolute; left: 50%; top: 50%; width: 64px; height: 64px; margin: -32px; border-radius: 50%; border: 0; cursor: pointer;
+  background: rgba(255, 255, 255, .22); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); color: #fff; display: none; place-items: center; }
+.screen.paused .play { display: grid; }
+.screen .play svg { width: 26px; height: 26px; margin-left: 4px; }
+.info { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; flex-wrap: wrap; width: min(100%, calc((100vh - 290px) * 16 / 9)); justify-self: center; }
+.info h2 { margin: 4px 0 2px; font: 700 calc(var(--fs) * 1.6)/1.2 var(--font-display); max-width: 60ch; }
+.info .meta { color: var(--label-2); font-size: calc(var(--fs) * .9); }
+.info .kind { display: inline-block; padding: 1px 9px; border-radius: 6px; font-size: calc(var(--fs) * .78); font-weight: 600;
+  background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); }
+.info .acts { display: flex; gap: 8px; flex-wrap: wrap; }
+/* 图标按钮：圆形，悬停时上方浮出名称 */
+.b.icon { position: relative; width: 42px; min-height: 42px; padding: 0; border-radius: 50%; }
+.b.icon svg { width: 19px; height: 19px; }
+.b.icon::after { content: attr(data-tip); position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translate(-50%, 4px); white-space: nowrap; pointer-events: none;
+  padding: 4px 9px; border-radius: 8px; font-size: 12px; font-weight: 500; background: var(--card-solid); color: var(--label); box-shadow: var(--shadow), 0 0 0 .5px var(--sep);
+  opacity: 0; transition: opacity .2s, transform .25s var(--ease); }
+.b.icon:hover::after, .b.icon:focus-visible::after { opacity: 1; transform: translate(-50%, 0); }
+.idx { font: calc(var(--fs) * .85) var(--mono); color: var(--label-3); }
+
+/* ---------- 网格 ---------- */
+.gridview { overflow: auto; min-height: 0; padding-bottom: 40px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 22px 18px; }
+.card { text-align: left; padding: 0; border: 0; background: none; cursor: pointer; color: inherit; border-radius: 14px; }
+.card.t3d-live .thumb { transform: none; }
+.thumb { position: relative; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; background: var(--fill-2) center / cover no-repeat;
+  box-shadow: 0 18px 34px -22px rgba(0, 0, 0, .9), inset 0 0 0 .5px var(--sep); transition: transform var(--t) var(--ease); }
+.card:hover .thumb { transform: translateY(-3px); }
+.thumb video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .25s; }
+.thumb video.on { opacity: 1; }
+.thumb .k { position: absolute; z-index: 1; left: 10px; top: 10px; padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; color: #fff; background: rgba(0, 0, 0, .5); }
+.card b { display: block; margin-top: 10px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card small { color: var(--label-2); font-size: calc(var(--fs) * .86); }
+[data-view="arc"] .gridview, [data-view="grid"] .arcview { display: none; }
+.empty { color: var(--label-2); padding: 60px 0; text-align: center; }
+
+/* 全屏查看（网格视图） */
+.viewer { position: fixed; inset: 0; z-index: 10; display: none; grid-template-rows: auto 1fr auto; background: rgba(0, 0, 0, .94); color: #fff; }
+.viewer.on { display: grid; }
+.viewer .top, .viewer .foot { display: flex; align-items: center; gap: 10px; padding: 14px 22px; flex-wrap: wrap; }
+.viewer .top { justify-content: space-between; }
+.viewer h3 { margin: 0; font-size: calc(var(--fs) * 1.1); }
+.viewer video { width: 100%; height: 100%; min-height: 0; object-fit: contain; background: #000; outline: none; }
+.viewer .meta { margin-right: auto; color: rgba(255, 255, 255, .6); font-size: calc(var(--fs) * .9); }
+@media (max-width: 900px) { .arcview { grid-template-columns: 200px 1fr; } .page { padding: 0 18px; } }
+</style>
+</head>
+<body>
+<div class="bg" id="bg"><i></i><i></i></div>
+<div class="page">
+  <header class="headline">
+    <div>
+      <h1>作品集</h1>
+      <div class="sub" id="sum">读取中…</div>
+    </div>
+    <div class="tools">
+      <div class="segmented" id="filter" role="radiogroup" aria-label="作品类型">
+        <label><input type="radio" name="kind" value="all" checked><span>全部</span></label>
+        <label><input type="radio" name="kind" value="piano"><span>钢琴</span></label>
+        <label><input type="radio" name="kind" value="tracks"><span>音轨</span></label>
+        <label><input type="radio" name="kind" value="intro"><span>开头</span></label>
+        <label><input type="radio" name="kind" value="lyricfilm"><span>动画</span></label>
+      </div>
+      <input class="input search" id="search" type="search" placeholder="搜索标题">
+      <div class="segmented" role="radiogroup" aria-label="浏览方式">
+        <label><input type="radio" name="view" value="arc"><span>胶片</span></label>
+        <label><input type="radio" name="view" value="grid"><span>网格</span></label>
+      </div>
+      <button class="b gray" id="refresh" type="button">刷新</button>
+    </div>
+  </header>
+
+  <main class="arcview" id="arcview">
+    <div class="reel" id="reel" tabindex="0" aria-label="作品胶片，滚轮或方向键切换">
+      <span class="reel-hint">滚轮 / ↑↓ 切换 · Enter 全屏</span>
+    </div>
+    <section class="stage" id="stage">
+      <div class="screen paused" id="screen">
+        <video id="sv" playsinline controls preload="none"></video>
+        <button class="play" id="play" type="button" aria-label="播放"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg></button>
+      </div>
+      <div class="info">
+        <div>
+          <span class="kind" id="sKind"></span> <span class="idx" id="sIdx"></span>
+          <h2 id="sTitle"></h2>
+          <div class="meta" id="sMeta"></div>
+        </div>
+        <div class="acts">
+          <button class="b gray icon" id="sFull" type="button" data-tip="全屏" aria-label="全屏"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+          <button class="b gray icon" id="sOpen" type="button" data-tip="打开文件夹" aria-label="打开文件夹"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 7.5a2 2 0 0 1 2-2h4.2l2 2H19a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></button>
+          <button class="b gray icon" id="sCopy" type="button" data-tip="复制文案" aria-label="复制文案"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="8" y="8" width="12" height="13" rx="2.5"/><path d="M16 8V5.5A2.5 2.5 0 0 0 13.5 3h-7A2.5 2.5 0 0 0 4 5.5v9A2.5 2.5 0 0 0 6.5 17H8"/></svg></button>
+          <button class="b filled icon" id="sPublish" type="button" data-tip="发布到各平台" aria-label="发布到各平台"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3 10 14M21 3l-7 18-4-7-7-4z"/></svg></button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <main class="gridview"><div class="grid" id="grid"></div></main>
+</div>
+
+<div class="viewer" id="viewer" role="dialog" aria-modal="true">
+  <div class="top"><h3 id="vTitle"></h3><button class="b gray" id="vClose" type="button">关闭（Esc）</button></div>
+  <video id="vVideo" controls playsinline></video>
+  <div class="foot">
+    <span class="meta" id="vMeta"></span>
+    <button class="b gray icon" id="vPrev" type="button" data-tip="上一个" aria-label="上一个"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 5-7 7 7 7"/></svg></button>
+    <button class="b gray icon" id="vNext" type="button" data-tip="下一个" aria-label="下一个"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg></button>
+    <button class="b gray icon" id="vFull" type="button" data-tip="全屏" aria-label="全屏"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+    <button class="b gray icon" id="vOpen" type="button" data-tip="打开文件夹" aria-label="打开文件夹"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 7.5a2 2 0 0 1 2-2h4.2l2 2H19a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></button>
+    <button class="b gray icon" id="vCopy" type="button" data-tip="复制文案" aria-label="复制文案"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="8" y="8" width="12" height="13" rx="2.5"/><path d="M16 8V5.5A2.5 2.5 0 0 0 13.5 3h-7A2.5 2.5 0 0 0 4 5.5v9A2.5 2.5 0 0 0 6.5 17H8"/></svg></button>
+    <button class="b filled icon" id="vPublish" type="button" data-tip="发布到各平台" aria-label="发布到各平台"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3 10 14M21 3l-7 18-4-7-7-4z"/></svg></button>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const ST = window.StudioSettings, cfg = () => ST.get();
+const KIND = { piano: "钢琴", tracks: "音轨", intro: "开头", lyricfilm: "动画" };
+let items = [], shown = [];
+
+function toast(msg, err) {
+  const t = $("#toast"); t.textContent = msg; t.className = "toast on" + (err ? " err" : "");
+  clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove("on"), 2600);
+}
+async function load() {
+  try { items = await (await fetch("/api/library?all=1")).json(); } catch (e) { return toast("读取作品失败", true); }
+  const total = items.reduce((s, it) => s + it.size_mb, 0);
+  $("#sum").textContent = `${items.length} 个作品 · ${(total / 1024).toFixed(2)} GB`;
+  refilter();
+}
+function refilter() {
+  const q = $("#search").value.trim().toLowerCase(), k = document.querySelector("input[name=kind]:checked").value;
+  const keep = reel.sel >= 0 && shown[reel.sel] ? shown[reel.sel].folder : null;
+  shown = items.filter((it) => (k === "all" || it.kind === k) && (!q || it.title.toLowerCase().includes(q)));
+  buildReel(Math.max(0, shown.findIndex((it) => it.folder === keep)));
+  buildGrid();
+}
+function pubText(pub) {
+  const title = ((pub || "").match(/\*\*标题\*\*：(.+)/) || [])[1] || "";
+  const body = ((pub || "").match(/\*\*文案\*\*：([\s\S]*?)(\n\*\*|$)/) || [])[1] || "";
+  return [title.trim(), body.trim()].filter(Boolean).join("\n");
+}
+async function copyText(it) {
+  try { await navigator.clipboard.writeText(pubText(it.publish)); toast("发布文案已复制"); } catch (e) { toast("复制失败", true); }
+}
+async function openFolder(it) {
+  try {
+    const r = await fetch("/api/open", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: it.folder }) });
+    const d = await r.json(); if (d.error) throw new Error(d.error);
+  } catch (e) { toast(e.message, true); }
+}
+function publish(it) {
+  if (window.parent !== window) parent.postMessage({ nav: "tour", folder: it.folder }, location.origin);
+  else location.href = "/tour";
+}
+
+// ====================================================== 半弧形胶片
+const reel = { el: $("#reel"), frames: [], pos: 0, target: 0, vel: 0, sel: -1, raf: 0, last: 0, snapT: 0, near: -1, token: 0 };
+const GAP = () => reel.el.clientHeight / 6.2;                 // 相邻两张在弧上的间距（像素）
+
+function buildReel(start) {
+  reel.frames.forEach((f) => f.remove());
+  reel.frames = shown.map((it, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "frame"; b.title = it.title;
+    if (it.cover) b.style.backgroundImage = `url("${it.cover}")`;
+    b.innerHTML = '<span class="k"></span>';
+    b.firstChild.textContent = KIND[it.kind] || "作品";
+    b.addEventListener("click", () => { reel.target = i; kick(); });
+    b.addEventListener("dblclick", () => fullscreen());
+    reel.el.appendChild(b);
+    return b;
+  });
+  reel.pos = reel.target = start; reel.vel = 0; reel.sel = -1; reel.near = start;
+  layout();
+  if (shown.length) commit(start); else clearStage();
+}
+function layout() {
+  const s = cfg(), n = shown.length, gap = GAP(), w = reel.el.clientWidth;
+  const cw = Math.min(250, w * 0.74);
+  reel.el.style.setProperty("--cw", cw + "px");
+  const step = 0.05 + s.arcCurve * 0.24;                     // 每张在弧上占的角度（弧度）：越大越弯
+  const R = gap / step;
+  for (let i = 0; i < n; i++) {
+    const f = reel.frames[i], d = i - reel.pos, ad = Math.abs(d);
+    if (ad > 5.5) { if (f.style.display !== "none") f.style.display = "none"; continue; }
+    if (f.style.display === "none") f.style.display = "";
+    const th = d * step;
+    const x = (w - cw) * 0.62 + (R * Math.cos(th) - R) * 1.15;    // 圆弧：中间那张最靠右，往上往下渐渐向左弯
+    const y = R * Math.sin(th);
+    const sc = Math.max(0.55, 1 - 0.11 * ad);
+    f.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) rotate(${(th * 57.3 * 0.55).toFixed(2)}deg) scale(${sc.toFixed(3)})`;
+    f.style.opacity = Math.max(0, 1 - 0.16 * ad).toFixed(3);
+    f.style.setProperty("--dim", Math.min(0.62, 0.15 * ad).toFixed(3));
+    f.style.zIndex = String(100 - Math.round(ad * 10));
+  }
+}
+function kick() {
+  reel.target = Math.max(0, Math.min(shown.length - 1, reel.target));
+  if (!reel.raf) { reel.last = performance.now(); reel.raf = requestAnimationFrame(step); }
+  $("#stage").classList.add("moving");
+}
+function step(now) {
+  const s = cfg(), dt = Math.min(0.05, (now - reel.last) / 1000), m = ST.motionScale();
+  reel.last = now;
+  const prev = reel.pos;
+  if (m === 0) { reel.pos = reel.target; reel.vel = 0; }
+  else if (s.switchAnim === "spring") {                    // 弹簧：略有回弹
+    const k = 170 * s.animSpeed * s.animSpeed, c = 2 * Math.sqrt(k) * 0.62;
+    reel.vel += (k * (reel.target - reel.pos) - c * reel.vel) * dt;
+    reel.pos += reel.vel * dt;
+  } else {                                                  // 平滑：指数趋近
+    reel.pos += (reel.target - reel.pos) * (1 - Math.exp(-dt * 11 * s.animSpeed / Math.max(m, 0.3)));
+  }
+  const speed = Math.abs(reel.pos - prev) / Math.max(dt, 1e-3);   // 每秒经过几张
+  const near = Math.round(reel.pos);
+  if (near !== reel.near) {                                 // 经过一张：咔嗒
+    reel.near = near;
+    window.FilmSound.tick(Math.min(1, speed / 14));
+    reel.frames.forEach((f, i) => f.classList.toggle("sel", i === near));
+  }
+  window.FilmSound.friction(Math.min(1, speed / 12));
+  layout();
+  const done = Math.abs(reel.target - reel.pos) < 0.002 && Math.abs(reel.vel) < 0.01 && reel.target === Math.round(reel.target);
+  if (done) {
+    reel.pos = reel.target; reel.raf = 0; layout();
+    window.FilmSound.friction(0);
+    $("#stage").classList.remove("moving");
+    if (reel.target !== reel.sel) { window.FilmSound.settle(); commit(reel.target); }
+    return;
+  }
+  reel.raf = requestAnimationFrame(step);
+}
+// 滚轮：累积成目标位置；停下 140ms 后吸附到最近的一张
+reel.el.addEventListener("wheel", (e) => {
+  if (!shown.length) return;
+  e.preventDefault();
+  const dy = e.deltaMode === 1 ? e.deltaY * 40 : e.deltaMode === 2 ? e.deltaY * 400 : e.deltaY;
+  reel.target += dy / 120 * 0.85 * cfg().wheelSensitivity;
+  clearTimeout(reel.snapT);
+  reel.snapT = setTimeout(() => { reel.target = Math.round(reel.target); kick(); }, 140);
+  kick();
+}, { passive: false });
+$("#arcview").addEventListener("wheel", (e) => { if (!reel.el.contains(e.target) && !$("#sv").contains(e.target)) reel.el.dispatchEvent(new WheelEvent("wheel", e)); }, { passive: true });
+window.addEventListener("keydown", (e) => {
+  if (document.documentElement.dataset.view !== "arc" || $("#viewer").classList.contains("on") || /INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
+  const map = { ArrowUp: -1, ArrowLeft: -1, PageUp: -3, ArrowDown: 1, ArrowRight: 1, PageDown: 3 };
+  if (e.key in map) { e.preventDefault(); reel.target = Math.round(reel.target) + map[e.key]; kick(); }
+  else if (e.key === "Home") { reel.target = 0; kick(); }
+  else if (e.key === "End") { reel.target = shown.length - 1; kick(); }
+  else if (e.key === "Enter" && reel.sel >= 0) fullscreen();
+});
+
+// 选中一张：标题、信息、封面、背景在同一帧更新；视频停稳 loadDelay 毫秒后再加载（过时的加载会被丢弃）
+function commit(i) {
+  const it = shown[i]; if (!it) return;
+  reel.sel = i; const token = ++reel.token;
+  reel.frames.forEach((f, k) => f.classList.toggle("sel", k === i));
+  $("#sTitle").textContent = it.title;
+  $("#sKind").textContent = KIND[it.kind] || "作品";
+  $("#sIdx").textContent = `${i + 1} / ${shown.length}`;
+  $("#sMeta").textContent = `${it.time} · ${it.size_mb} MB`;
+  $("#sPublish").hidden = it.kind === "intro";
+  const scr = $("#screen"), v = $("#sv");
+  v.classList.remove("on"); v.pause(); v.removeAttribute("src"); v.load();
+  scr.style.backgroundImage = it.cover ? `url("${it.cover}")` : "";
+  scr.classList.add("paused");
+  setBg(it.cover);
+  const s = cfg();
+  setTimeout(() => {
+    if (token !== reel.token) return;
+    v.loop = s.loop;
+    if (s.autoplay) startVideo(it, s.autoplayMuted);
+  }, s.loadDelay);
+}
+// 外壳会在后台提前加载这个页面（隐藏着）；隐藏时不自动播放，不然切到别的页面（比如剪辑）时会突然冒出声音
+let offstage = false;
+const hiddenNow = () => offstage || window.innerWidth === 0;
+function startVideo(it, muted) {
+  if (hiddenNow()) return;
+  const v = $("#sv"), token = reel.token;
+  if (v.getAttribute("src") !== it.video) { v.src = it.video; }
+  v.muted = muted;
+  v.play().then(() => { if (token === reel.token) { v.classList.add("on"); $("#screen").classList.remove("paused"); } })
+    .catch(() => { v.muted = true; v.play().then(() => { v.classList.add("on"); $("#screen").classList.remove("paused"); }).catch(() => {}); });
+}
+function clearStage() {
+  $("#sTitle").textContent = "这里还没有作品"; $("#sKind").textContent = ""; $("#sIdx").textContent = ""; $("#sMeta").textContent = "";
+  const v = $("#sv"); v.pause(); v.removeAttribute("src"); v.load(); $("#screen").style.backgroundImage = ""; setBg(null);
+}
+let bgFlip = 0;
+function setBg(url) {
+  const layers = document.querySelectorAll("#bg i"), s = cfg();
+  if (!s.bgFollow || !url) { layers.forEach((l) => l.classList.remove("on")); return; }
+  const next = layers[bgFlip ^ 1];
+  next.style.backgroundImage = `url("${url}")`;
+  next.classList.add("on"); layers[bgFlip].classList.remove("on");
+  bgFlip ^= 1;
+}
+$("#play").addEventListener("click", () => { const it = shown[reel.sel]; if (it) startVideo(it, false); });
+$("#sv").addEventListener("pause", () => { if ($("#sv").classList.contains("on")) $("#screen").classList.add("paused"); });
+$("#sv").addEventListener("play", () => $("#screen").classList.remove("paused"));
+function fullscreen() {
+  const it = shown[reel.sel]; if (!it) return;
+  if ($("#sv").getAttribute("src") !== it.video) startVideo(it, false);
+  $("#sv").requestFullscreen().catch(() => {});
+}
+$("#sFull").addEventListener("click", fullscreen);
+$("#sOpen").addEventListener("click", () => shown[reel.sel] && openFolder(shown[reel.sel]));
+$("#sCopy").addEventListener("click", () => shown[reel.sel] && copyText(shown[reel.sel]));
+$("#sPublish").addEventListener("click", () => shown[reel.sel] && publish(shown[reel.sel]));
+new ResizeObserver(() => layout()).observe(reel.el);
+
+// ====================================================== 网格（原作品库：悬停预览、点击全屏）
+let live = null, vIdx = -1;
+function buildGrid() {
+  const grid = $("#grid"); grid.innerHTML = "";
+  if (!shown.length) { grid.innerHTML = '<p class="empty">这里还没有作品。</p>'; return; }
+  const frag = document.createDocumentFragment();
+  shown.forEach((it, i) => {
+    const b = document.createElement("button");
+    b.className = "card"; b.type = "button"; b.dataset.i = i;
+    b.innerHTML = '<div class="thumb"><span class="k"></span></div><b></b><small></small>';
+    const th = b.querySelector(".thumb");
+    if (it.cover) th.style.backgroundImage = `url("${it.cover}")`;
+    b.querySelector(".k").textContent = KIND[it.kind] || "作品";
+    b.querySelector("b").textContent = it.title;
+    b.querySelector("small").textContent = `${it.time} · ${it.size_mb} MB`;
+    b.addEventListener("click", () => openViewer(i));
+    let timer;      // 停留 300ms 才加载预览，移开立即释放；同一时间只有一个预览在解码
+    b.addEventListener("mouseenter", () => {
+      timer = setTimeout(() => {
+        stopLive();
+        const v = document.createElement("video");
+        v.muted = true; v.loop = true; v.playsInline = true; v.preload = "auto"; v.src = it.video;
+        v.addEventListener("loadeddata", () => {
+          if (v.duration > 12) v.currentTime = Math.min(v.duration * 0.3, v.duration - 8);
+          v.play().catch(() => {}); v.classList.add("on");
+        }, { once: true });
+        th.appendChild(v); live = v;
+      }, 300);
+    });
+    b.addEventListener("mouseleave", () => { clearTimeout(timer); stopLive(); });
+    frag.appendChild(b);
+  });
+  grid.appendChild(frag);
+}
+// 网格卡片的 3D 悬停：跟随鼠标倾斜，歌名浮在视频上方
+window.Tilt3D.attach($("#grid"), ".card", { label: (el) => { const it = shown[+el.dataset.i]; return it ? [it.title, it.time] : ""; }, top: "40%" });
+function stopLive() { if (!live) return; live.pause(); live.removeAttribute("src"); live.load(); live.remove(); live = null; }
+function openViewer(i) {
+  stopLive();
+  vIdx = (i + shown.length) % shown.length;
+  const it = shown[vIdx];
+  $("#vTitle").textContent = it.title;
+  $("#vMeta").textContent = `${KIND[it.kind] || "作品"} · ${it.time} · ${it.size_mb} MB`;
+  const v = $("#vVideo"); v.poster = it.cover || ""; v.src = it.video; v.play().catch(() => {});
+  $("#vPublish").hidden = it.kind === "intro";
+  $("#viewer").classList.add("on");
+}
+function closeViewer() {
+  const v = $("#vVideo"); v.pause(); v.removeAttribute("src"); v.load();
+  if (document.fullscreenElement) document.exitFullscreen();
+  $("#viewer").classList.remove("on"); vIdx = -1;
+}
+$("#vClose").addEventListener("click", closeViewer);
+$("#vPrev").addEventListener("click", () => openViewer(vIdx - 1));
+$("#vNext").addEventListener("click", () => openViewer(vIdx + 1));
+$("#vFull").addEventListener("click", () => $("#vVideo").requestFullscreen().catch(() => {}));
+$("#vOpen").addEventListener("click", () => openFolder(shown[vIdx]));
+$("#vCopy").addEventListener("click", () => copyText(shown[vIdx]));
+$("#vPublish").addEventListener("click", () => { const it = shown[vIdx]; closeViewer(); publish(it); });
+window.addEventListener("keydown", (e) => { if (vIdx >= 0 && e.key === "Escape" && !document.fullscreenElement) closeViewer(); });
+
+// ====================================================== 设置与视图
+function applySettings(s) {
+  document.documentElement.dataset.view = s.worksView;
+  document.querySelector(`input[name=view][value=${s.worksView}]`).checked = true;
+  document.documentElement.style.setProperty("--bgblur", s.bgBlur + "px");
+  if (!s.bgFollow) setBg(null); else if (shown[reel.sel]) setBg(shown[reel.sel].cover);
+  layout();
+}
+ST.on(applySettings);
+applySettings(cfg());
+document.querySelectorAll("input[name=view]").forEach((r) => r.addEventListener("change", () => {
+  ST.set({ worksView: r.value });                // 和设置中心是同一个设置
+  if (r.value === "grid") { $("#sv").pause(); window.FilmSound.friction(0); } else layout();
+}));
+document.querySelectorAll("input[name=kind]").forEach((r) => r.addEventListener("change", refilter));
+$("#search").addEventListener("input", refilter);
+$("#refresh").addEventListener("click", load);
+window.addEventListener("message", (e) => {
+  if (e.origin !== location.origin || !e.data) return;
+  if (e.data.hidden || e.data.shown) offstage = !!e.data.hidden;
+  if (e.data.shown) load();
+  if (e.data.hidden) { stopLive(); $("#sv").pause(); $("#vVideo").pause(); window.FilmSound.friction(0); }
+});
+load();
+</script>
+<!-- 文字操作按钮换成简化图标（web/ui/iconize.js） -->
+<script src="/ui/iconize.js"></script>
+<script>window.Iconize.apply([{ sel: "#refresh", icon: "refresh" }]);</script>
+</body>
+</html>

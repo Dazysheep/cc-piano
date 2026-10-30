@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cc-piano</title>
+<link rel="icon" href="/ui/icon.png">
+<script src="/ui/settings.js"></script>
+<script src="/ui/winctl.js"></script>
+<script src="/ui/tabs.js"></script>
+<link rel="stylesheet" href="/ui/ui.css">
+<style>
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body { display: grid; grid-template-columns: 236px 1fr; }
+
+/* ---------- 侧栏 ---------- */
+.side { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 2px; padding: 20px 12px 14px; border-width: 0 .5px 0 0; }
+.label { margin: 14px 12px 6px; font-size: calc(var(--fs) * .76); font-weight: 600; color: var(--label-3); letter-spacing: .06em; }
+
+.nav { display: flex; align-items: center; gap: 11px; width: 100%; padding: 8px 10px; border: 0; border-radius: 10px; cursor: pointer;
+  background: transparent; color: var(--label); text-align: left; transition: background var(--t) var(--ease); }
+/* 图标：没有底色，透明线条，颜色跟随设置里的强调色 */
+.nav .ic { flex: none; width: 28px; height: 28px; display: grid; place-items: center; color: var(--accent); background: none; }
+.nav .ic svg { width: 21px; height: 21px; }
+.nav:not(.on) .ic { opacity: .82; }
+.nav span { flex: 1; font-size: calc(var(--fs) * 1); font-weight: 500; }
+.nav kbd { font: calc(var(--fs) * .72) var(--mono); color: var(--label-3); opacity: 0; transition: opacity var(--t); }
+.nav:hover { background: var(--fill-2); }
+.nav:hover kbd { opacity: 1; }
+.nav.on { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.nav.on span { color: var(--accent); font-weight: 600; }
+.nav .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); display: none; }
+.nav.busy .dot { display: block; }
+
+.dock { margin-top: auto; display: grid; gap: 6px; }
+.job { padding: 12px; border-radius: 12px; background: var(--fill-2); font-size: calc(var(--fs) * .86); display: none; }
+.job.on { display: block; }
+.job b { display: block; font-weight: 600; margin-bottom: 3px; }
+.job p { margin: 0 0 8px; color: var(--label-2); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.bar { height: 4px; border-radius: 4px; background: var(--fill); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .6s var(--ease); }
+.tool { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 9px; border: 0; background: none; color: var(--label-2);
+  cursor: pointer; font-size: calc(var(--fs) * .9); text-align: left; }
+.tool:hover { color: var(--label); background: var(--fill-2); }
+.tool svg { width: 16px; height: 16px; }
+
+/* ---------- 内容区 ---------- */
+.main { position: relative; min-width: 0; background: var(--bg); }
+.main iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: transparent; }
+.main iframe[hidden] { display: none; }
+.loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--label-3); pointer-events: none; }
+.banner { position: fixed; right: 18px; top: 14px; z-index: 5; max-width: 420px; padding: 12px 16px; border-radius: 12px;
+  background: var(--danger); color: #fff; font-size: calc(var(--fs) * .93); display: none; box-shadow: var(--shadow); }
+.banner.on { display: block; }
+/* 软件窗口：顶部是独立的标题栏（红黄绿三点、拖动窗口），由 winctl.js 画出并让出 40px */
+/* 设置 → 侧边栏：文字、分组标题、快捷键提示可以分别隐藏；隐藏文字时变成只有图标的窄栏 */
+body.no-labels { grid-template-columns: 72px 1fr; }
+body.no-labels .side { padding: 18px 8px 14px; }
+body.no-labels .nav span, body.no-labels .nav kbd, body.no-labels .tool span, body.no-labels .job, body.no-labels .label { display: none; }
+body.no-labels .nav, body.no-labels .tool { justify-content: center; padding: 9px 0; }
+body.no-labels .nav .dot { position: absolute; right: 10px; top: 8px; }
+#navList, #navSys { display: grid; gap: 2px; }
+body.no-groups .label { display: none; }
+body.no-groups #navList > .nav:first-child { margin-top: 6px; }
+body.no-keys .nav kbd { display: none; }
+.nav { position: relative; }
+@media (max-width: 860px) {
+  body { grid-template-columns: 64px 1fr; }
+  .nav span, .nav kbd, .tool span, .job, .label { display: none !important; }
+  .side { padding: 16px 8px; } .nav { justify-content: center; padding: 8px 0; }
+}
+</style>
+</head>
+<body>
+<aside class="side material">
+  <div id="navList"></div>
+  <div class="dock">
+    <div class="job" id="job"><b id="jobTitle">正在处理</b><p id="jobMsg"></p><div class="bar"><i id="jobBar"></i></div></div>
+    <button class="tool" id="openDeliver" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      <span>视频文件夹</span></button>
+    <button class="tool" id="openJianying" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m10 9 5 3-5 3z" fill="currentColor"/></svg>
+      <span>打开剪映</span></button>
+    <div id="navSys"></div>
+  </div>
+</aside>
+<main class="main" id="main"><div class="loading" id="loading">加载中…</div></main>
+<div class="banner" id="banner"></div>
+
+<script>
+const TABS = Object.fromEntries(CC_TABS.map((t) => [t.key, t]));   // 功能清单在 /ui/tabs.js（设置里的「调整左侧功能栏」也读它）
+const KEYS = CC_TABS.map((t) => t.key);
+const BY_KBD = Object.fromEntries(CC_TABS.filter((t) => t.kbd).map((t) => [t.kbd, t.key]));
+const navBtn = (t) => `<button class="nav" data-tab="${t.key}" type="button"><i class="ic">${t.icon}</i>
+  <span>${t.title}</span><i class="dot"></i>${t.kbd ? `<kbd>Ctrl ${t.kbd}</kbd>` : ""}</button>`;
+function renderNav() {
+  const s = StudioSettings.get();
+  document.getElementById("navList").innerHTML = CC_GROUPS.map((g) => {
+    const items = CC_TABS.filter((t) => t.group === g && CC_TAB_VISIBLE(t, s));
+    return items.length ? `<div class="label">${g}</div>` + items.map(navBtn).join("") : "";   // 整组都隐藏了就不画标题
+  }).join("");
+  document.getElementById("navSys").innerHTML = CC_TABS.filter((t) => t.group === "系统" && CC_TAB_VISIBLE(t, s)).map(navBtn).join("");
+  document.querySelectorAll(".nav").forEach((b) => {
+    b.addEventListener("click", () => go(b.dataset.tab, true));
+    b.classList.toggle("on", b.dataset.tab === current);
+  });
+  document.querySelectorAll(".nav, .tool").forEach((b) => { b.title = b.querySelector("span").textContent; });   // 隐藏文字时悬停显示名称
+}
+const visible = (k) => TABS[k] && CC_TAB_VISIBLE(TABS[k], StudioSettings.get());
+const firstVisible = () => KEYS.find(visible) || "settings";
+const frames = {};
+let current = null;
+
+function frame(key) {
+  if (!frames[key]) {           // 第一次打开才加载，之后常驻，切换不重新加载
+    const f = document.createElement("iframe");
+    f.src = TABS[key].src; f.title = TABS[key].title; f.hidden = true;
+    f.ready = new Promise((r) => f.addEventListener("load", r, { once: true }));
+    f.ready.then(() => {
+      if (current === key) document.getElementById("loading").hidden = true;
+      // 焦点在页面里（比如正在输入）时，Ctrl+1~6 照样能切换页面
+      try { f.contentWindow.addEventListener("keydown", shortcut); } catch (e) { /* 非同源页面 */ }
+    });
+    document.getElementById("main").appendChild(f);
+    frames[key] = f;
+  }
+  return frames[key];
+}
+function post(key, msg) {
+  const f = frames[key];
+  if (f) f.ready.then(() => f.contentWindow.postMessage(msg, location.origin));
+}
+function go(key, force) {
+  if (!TABS[key] || (!force && !visible(key))) key = visible("studio") ? "studio" : firstVisible();   // 隐藏的功能退回第一个可见的
+  if (current === key) return;
+  if (current) { frames[current].hidden = true; post(current, { hidden: true }); }
+  const f = frame(key);
+  f.hidden = false;
+  document.getElementById("loading").hidden = f.contentDocument && f.contentDocument.readyState === "complete";
+  current = key;
+  post(key, { shown: true });
+  document.querySelectorAll(".nav").forEach((b) => b.classList.toggle("on", b.dataset.tab === key));
+  document.title = `${TABS[key].title} · cc-piano`;
+  if (window.WinCtl) WinCtl.setSub(TABS[key].title);
+  try { localStorage.setItem("studio.tab", key); } catch (e) { /* 忽略 */ }
+}
+let navSig = "";
+function applyNav(s) {
+  const sig = JSON.stringify([s.navHidden || [], CC_TABS.filter((t) => t.requires).map((t) => !!s[t.requires])]);
+  if (sig !== navSig) {                                   // 增减了功能：重画侧边栏；正在看的被隐藏了就换一个
+    navSig = sig; renderNav();
+    if (current && !visible(current) && current !== "settings") go(firstVisible());
+  }
+  document.body.classList.toggle("no-labels", !s.navLabels);
+  document.body.classList.toggle("no-groups", !s.navGroups);
+  document.body.classList.toggle("no-keys", !s.navKeys);
+}
+StudioSettings.on(applyNav);
+applyNav(StudioSettings.get());
+// 软件窗口的独立标题栏：红黄绿三点 + 「cc-piano · 当前页面」（只在安装版的窗口里出现）
+WinCtl.attach({ bar: true, title: "cc-piano" });
+if (current) WinCtl.setSub(TABS[current].title);     // 还没打开页面时，go() 打开后会设置
+function shortcut(e) {
+  if (e.ctrlKey && BY_KBD[e.key] && visible(BY_KBD[e.key])) { e.preventDefault(); go(BY_KBD[e.key]); }
+}
+window.addEventListener("keydown", shortcut);
+// 子页面发来的跳转请求：{nav: "tour", folder} 打开发布台并选中这条成片
+window.addEventListener("message", (e) => {
+  if (e.origin !== location.origin || !e.data || !e.data.nav) return;
+  go(e.data.nav, true);                                   // 子页面要求的跳转：隐藏的功能也照样打开
+  if (e.data.folder) post(e.data.nav, { tourFolder: e.data.folder });
+});
+
+let start = new URLSearchParams(location.search).get("tab");     // 从开端页点某张卡片进来
+try { start = start || localStorage.getItem("studio.tab") || "studio"; } catch (e) { start = start || "studio"; }
+go(start);
+// 首页加载好、空闲 5 秒后，再趁空闲把其他（显示着的）页面一个个提前加载（隐藏、暂停动画），之后切换不用再等。
+// 每加载一个都等下一次空闲，不和刚打开的页面抢主线程（原来 1.2 秒后就连着加载 9 个页面，启动时会卡）。流畅模式下不预加载。
+const idle = (fn, t) => (window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(fn, { timeout: t });
+function preloadRest() {
+  if (StudioSettings.get().perfMode) return;
+  const rest = KEYS.filter((k) => !frames[k] && visible(k));
+  const next = () => {
+    if (StudioSettings.get().perfMode || document.hidden) return setTimeout(() => idle(next, 8000), 3000);
+    const k = rest.shift();
+    if (!k) return;
+    const f = frame(k);
+    f.ready.then(() => { if (current !== k) post(k, { hidden: true }); setTimeout(() => idle(next, 8000), 1500); });
+  };
+  idle(next, 8000);
+}
+frames[current].ready.then(() => setTimeout(preloadRest, 5000));
+
+// 后台任务状态（只在窗口可见时查询）
+async function pollJobs() {
+  if (!document.hidden) {
+    try {
+      const jobs = await (await fetch("/api/jobs")).json();
+      const run = jobs.filter((j) => j.status === "running" || j.status === "queued");
+      const box = document.getElementById("job");
+      box.classList.toggle("on", run.length > 0);
+      if (run.length) {
+        const j = run.find((x) => x.status === "running") || run[0];
+        document.getElementById("jobTitle").textContent = run.length > 1 ? `正在处理（另有 ${run.length - 1} 个排队）` : "正在处理";
+        document.getElementById("jobMsg").textContent = j.message || "排队中";
+        document.getElementById("jobBar").style.width = `${Math.round((j.progress || 0) * 100)}%`;
+      }
+    } catch (e) { /* 服务未启动时忽略 */ }
+  }
+  setTimeout(pollJobs, 2500);
+}
+pollJobs();
+// 3D 建模是否启用以服务端（model3d.json）为准：启动后空闲时对一下，侧边栏跟着显示 / 隐藏「3D 建模」
+idle(() => fetch("/api/model3d/config").then((r) => r.json()).then((c) => {
+  if (!!StudioSettings.get().model3d !== !!c.enabled) StudioSettings.set({ model3d: !!c.enabled });
+}).catch(() => {}), 6000);
+fetch("/api/health").then((r) => r.json()).then((h) => {
+  if (h.stale) { const b = document.getElementById("banner"); b.textContent = h.message; b.classList.add("on"); }
+}).catch(() => {});
+
+async function action(url) {
+  try {
+    const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+  } catch (e) {
+    const b = document.getElementById("banner"); b.textContent = e.message; b.classList.add("on");
+    setTimeout(() => b.classList.remove("on"), 4000);
+  }
+}
+document.getElementById("openDeliver").addEventListener("click", () => action("/api/open-deliver"));
+document.getElementById("openJianying").addEventListener("click", () => action("/api/open-jianying"));
+</script>
+</body>
+</html>

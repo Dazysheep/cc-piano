@@ -1,0 +1,10 @@
+﻿<title>飞书画板路由测试</title>
+<p>本文档的图由飞书原生画板绘制（Mermaid → 画板），用于验证“目标是飞书时优先用飞书画板”的路由规则。</p>
+<whiteboard type="mermaid">
+flowchart LR
+  A[作图需求] --> B{目标是飞书文档/画板?}
+  B -- 是 --> C[飞书原生画板]
+  B -- 否 --> D{drawio MCP 已批准?}
+  D -- 是 --> E[MCP 工具]
+  D -- 否 --> F[diagramctl.py 脚本]
+</whiteboard>

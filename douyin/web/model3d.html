@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3D 建模</title>
+<link rel="icon" href="/ui/icon.png">
+<script src="/ui/settings.js"></script>
+<link rel="stylesheet" href="/ui/ui.css">
+<script type="importmap">{ "imports": { "three": "/ui/three.module.min.js" } }</script>
+<style>
+html, body { height: 100%; }
+body { overflow: hidden; }
+.page { height: 100%; display: grid; grid-template-columns: 400px minmax(0, 1fr); }
+.left { min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; border-right: 1px solid var(--sep); }
+.lib { min-height: 0; overflow: auto; padding: 16px 14px 10px; }
+.lib h2 { margin: 0 4px 4px; font-size: calc(var(--fs) * 1.1); }
+.lib .sub { margin: 0 4px 12px; color: var(--label-2); font-size: calc(var(--fs) * .78); word-break: break-all; }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.card { display: flex; flex-direction: column; gap: 4px; padding: 6px; border: 1px solid transparent; border-radius: 12px; background: var(--fill-2);
+  color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.card:hover { border-color: var(--sep); }
+.card.on { border-color: var(--accent); }
+.card .pic { aspect-ratio: 1; border-radius: 8px; overflow: hidden; display: grid; place-items: center;
+  background: repeating-conic-gradient(#2a2a30 0 25%, #222228 0 50%) 0 / 14px 14px; }
+.card .pic img { width: 100%; height: 100%; object-fit: contain; }
+.card b { font-size: calc(var(--fs) * .76); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card small { color: var(--label-3); font-size: calc(var(--fs) * .68); }
+.viewer { position: relative; height: 360px; border-top: 1px solid var(--sep); background: #1b1c22; }
+.viewer canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+.viewer canvas:active { cursor: grabbing; }
+.viewer .tip { position: absolute; left: 10px; bottom: 8px; color: rgba(255, 255, 255, .55); font-size: calc(var(--fs) * .72); pointer-events: none; }
+.viewer .name { position: absolute; left: 10px; top: 8px; color: rgba(255, 255, 255, .85); font-size: calc(var(--fs) * .8); pointer-events: none; }
+.viewer .empty[hidden] { display: none; }
+.viewer .empty { position: absolute; inset: 0; display: grid; place-items: center; color: rgba(255, 255, 255, .45); font-size: calc(var(--fs) * .84); pointer-events: none; }
+.right { min-height: 0; overflow: auto; padding: 18px 22px 40px; }
+.right h3 { margin: 0 0 4px; font-size: calc(var(--fs) * 1.05); }
+.hint { color: var(--label-2); font-size: calc(var(--fs) * .8); line-height: 1.6; margin-bottom: 14px; }
+.drop { display: grid; place-items: center; gap: 8px; min-height: 200px; border: 1.5px dashed var(--sep); border-radius: 16px; background: var(--fill-2);
+  cursor: pointer; text-align: center; padding: 14px; transition: border-color var(--t); }
+.drop.over { border-color: var(--accent); }
+.drop img { max-height: 220px; max-width: 100%; border-radius: 10px; }
+.drop small { color: var(--label-2); }
+.opts { margin-top: 14px; display: grid; gap: 10px; }
+.opt { display: grid; grid-template-columns: 110px 1fr 56px; gap: 10px; align-items: center; font-size: calc(var(--fs) * .84); }
+.opt .val { font-family: var(--mono); color: var(--label-2); font-size: calc(var(--fs) * .78); }
+.opt input[type=text] { grid-column: 2 / 4; }
+.line { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 14px; }
+.state { color: var(--label-2); font-size: calc(var(--fs) * .8); }
+.box { margin-top: 18px; padding: 12px 14px; border-radius: 14px; background: var(--fill-2); font-size: calc(var(--fs) * .82); line-height: 1.7; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: var(--label-3); vertical-align: 1px; }
+.dot.on { background: #34c759; }
+.off-msg { padding: 60px 20px; text-align: center; color: var(--label-2); }
+.btn { padding: 7px 14px; border: 0; border-radius: 999px; background: var(--fill); color: var(--label); font: inherit; font-size: calc(var(--fs) * .82); cursor: pointer; }
+.btn:hover { background: color-mix(in srgb, var(--accent) 28%, transparent); }
+.btn.primary { background: var(--accent); color: var(--on-accent, #fff); }
+.btn.danger { color: var(--danger); }
+.btn[disabled] { opacity: .45; cursor: default; }
+.bar { height: 5px; border-radius: 5px; background: var(--fill); overflow: hidden; flex: 1; min-width: 120px; }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .4s; }
+</style>
+</head>
+<body>
+<div class="page" id="page">
+  <section class="left">
+    <div class="lib">
+      <h2>3D 建模库</h2><div class="sub" id="libDir">读取中…</div>
+      <div class="grid" id="grid"></div>
+    </div>
+    <div class="viewer" id="viewer"><div class="name" id="vName"></div><div class="empty" id="vEmpty">选一个模型在这里预览</div>
+      <div class="tip">左键拖动旋转 · 滚轮缩放 · 右键平移</div></div>
+  </section>
+  <section class="right">
+    <h3>图片 → 3D</h3>
+    <div class="hint">把一张图片拖进来（也可以点一下选择，或者直接 Ctrl+V 粘贴截图）。本地：自动抠出主体、估算深度，后台 Blender 做成有厚度的立体浮雕
+      （正面立体、背面是平的，几秒钟，不用联网）。云端：Hyper3D Rodin 生成前后都完整的模型（要密钥，按次计费）。主体和背景反差越大，抠得越干净。
+      生成时 Blender 在后台运行、做完就退出，和视频渲染排队，不会一起抢内存。</div>
+    <label class="drop" id="drop"><input type="file" id="file" accept="image/*" hidden><img id="srcImg" alt="" hidden>
+      <span id="dropTip"><b>拖入图片</b><br><small>或点击选择 · Ctrl+V 粘贴</small></span></label>
+    <div class="opts">
+      <div class="opt"><span>方式</span><div class="segmented"><label><input type="radio" name="mode" value="local" checked><span>本地立体浮雕</span></label>
+        <label><input type="radio" name="mode" value="cloud" id="cloudRadio"><span>云端完整模型</span></label></div></div>
+      <div class="opt local-only"><span>立体强度</span><input class="range" type="range" id="strength" min="0.05" max="1" step="0.05" value="0.35"><span class="val" id="strengthV"></span></div>
+      <div class="opt local-only"><span>厚度</span><input class="range" type="range" id="thickness" min="0.005" max="0.2" step="0.005" value="0.04"><span class="val" id="thicknessV"></span></div>
+      <div class="opt local-only"><span>平滑</span><input class="range" type="range" id="smooth" min="0" max="8" step="0.5" value="2"><span class="val" id="smoothV"></span></div>
+      <div class="opt"><span>名字</span><input class="input" type="text" id="name" placeholder="不填就用图片的文件名"></div>
+    </div>
+    <div class="line"><button class="btn primary" id="gen" type="button" disabled>生成 3D 模型</button>
+      <div class="bar"><i id="genBar"></i></div><span class="state" id="genState"></span></div>
+    <div class="box" id="sel" hidden></div>
+    <div class="box"><b>Blender</b><br><span id="blState">读取中…</span>
+      <div class="line" style="margin-top:8px"><button class="btn" id="openBl" type="button">打开 Blender（给 Claude / 手动编辑）</button>
+        <button class="btn" id="openDir" type="button">打开建模库文件夹</button></div></div>
+  </section>
+</div>
+<div class="off-msg" id="offMsg" hidden>3D 建模还没有启用：在「设置 → 3D 建模」里打开后，这里会出现 3D 建模库和生成工具。</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+async function api(path, body) {
+  const r = await fetch(path, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {});
+  const j = await r.json();
+  if (!r.ok || j.error) throw new Error(j.error || "出错了");
+  return j;
+}
+let ST = null, sel = null, srcPath = null;
+window.M3D = { show: null };                                 // 预览窗口由下面的 module 脚本提供
+
+async function load(keep) {
+  ST = await api("/api/model3d/state");
+  $("page").hidden = !ST.enabled; $("offMsg").hidden = ST.enabled;
+  if (!ST.enabled) return;
+  $("libDir").textContent = ST.dir + (ST.custom ? "" : "（默认文件夹，可以在设置里换）");
+  $("grid").innerHTML = ST.models.map((m, i) => `<button class="card${keep === m.name ? " on" : ""}" data-i="${i}" type="button">
+    <div class="pic">${m.thumb_url ? `<img src="${m.thumb_url}" alt="" loading="lazy">` : ""}</div><b>${esc(m.name)}</b>
+    <small>${m.kind === "relief" ? "本地浮雕" : m.kind.startsWith("cloud") ? "云端" : m.kind} · ${m.size_mb} MB</small></button>`).join("")
+    || '<div class="state" style="grid-column:1/-1">还没有模型：在右边拖入一张图片生成。</div>';
+  $("blState").innerHTML = ST.blender ? `Blender ${ST.blender}（douyin\\tools\\blender）<br><span class="dot${ST.mcp_running ? " on" : ""}"></span>`
+    + (ST.mcp_running ? `MCP 已连接（端口 ${ST.mcp_port}），Claude Code 可以直接操作打开的 Blender` : "MCP 未连接：点「打开 Blender」后自动连接")
+    : "还没有找到 Blender。";
+  $("cloudRadio").disabled = !ST.cloud_ready;
+  $("cloudRadio").parentElement.title = ST.cloud_ready ? "" : `要先在 Windows 用户环境变量里添加 ${ST.cloud_key_env}（Hyper3D 的密钥）`;
+  const i = ST.models.findIndex((m) => m.name === keep);
+  if (i >= 0) pick(i);
+}
+function pick(i) {
+  sel = ST.models[i];
+  document.querySelectorAll(".card").forEach((c) => c.classList.toggle("on", +c.dataset.i === i));
+  $("sel").hidden = false;
+  $("sel").innerHTML = `<b>${esc(sel.name)}</b> · ${esc(sel.created || "")}<br><span class="state">${esc(sel.dir)}</span>
+    <div class="line" style="margin-top:8px"><button class="btn" data-a="blend" type="button"${sel.blend ? "" : " disabled"}>在 Blender 里打开</button>
+    <button class="btn" data-a="dir" type="button">打开文件夹</button><button class="btn danger" data-a="del" type="button">删除</button></div>`;
+  if (window.M3D.show) window.M3D.show(sel.glb_url, sel.name);
+  else window.__pendingPick = [sel.glb_url, sel.name];      // 预览模块还没加载完：加载完再显示
+}
+$("grid").addEventListener("click", (e) => { const c = e.target.closest(".card"); if (c) pick(+c.dataset.i); });
+$("sel").addEventListener("click", async (e) => {
+  const a = e.target.closest("[data-a]")?.dataset.a;
+  if (!a || !sel) return;
+  try {
+    if (a === "blend") { await api("/api/model3d/open_blender", { name: sel.name }); setTimeout(() => load(sel.name), 6000); }
+    if (a === "dir") await api("/api/model3d/reveal", { name: sel.name });
+    if (a === "del" && confirm(`删除模型「${sel.name}」？（整个文件夹会删掉）`)) {
+      await api("/api/model3d/delete", { name: sel.name }); sel = null; $("sel").hidden = true; if (window.M3D.show) window.M3D.show(null); await load();
+    }
+  } catch (err) { alert(err.message); }
+});
+$("openBl").addEventListener("click", async () => {
+  try { await api("/api/model3d/open_blender", {}); $("blState").textContent = "正在打开 Blender…"; setTimeout(() => load(sel && sel.name), 7000); }
+  catch (err) { alert(err.message); }
+});
+$("openDir").addEventListener("click", () => api("/api/model3d/reveal", {}).catch((err) => alert(err.message)));
+
+// ---- 选图：拖入 / 点选 / 粘贴 → 上传到 uploads，拿到路径
+async function useFile(f) {
+  if (!f || !f.type.startsWith("image/")) return;
+  $("srcImg").src = URL.createObjectURL(f); $("srcImg").hidden = false; $("dropTip").hidden = true;
+  if (!$("name").value) $("name").value = (f.name || "截图").replace(/\.[^.]+$/, "");
+  $("genState").textContent = "上传中…"; $("gen").disabled = true;
+  try {
+    const name = encodeURIComponent(f.name && /\.(png|jpe?g|webp)$/i.test(f.name) ? f.name : "paste.png");
+    const r = await fetch(`/api/upload?kind=model3d&session=model3d&name=${name}`, { method: "POST", body: f });
+    const j = await r.json(); if (!r.ok || j.error) throw new Error(j.error || "上传失败");
+    srcPath = j.path; $("genState").textContent = ""; $("gen").disabled = false;
+  } catch (err) { $("genState").textContent = err.message; }
+}
+$("file").addEventListener("change", (e) => useFile(e.target.files[0]));
+const drop = $("drop");
+drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("over"); });
+drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+drop.addEventListener("drop", (e) => { e.preventDefault(); drop.classList.remove("over"); useFile(e.dataTransfer.files[0]); });
+window.addEventListener("paste", (e) => { const it = [...(e.clipboardData?.items || [])].find((x) => x.type.startsWith("image/")); if (it) useFile(it.getAsFile()); });
+for (const k of ["strength", "thickness", "smooth"]) {
+  const out = () => {                                        // 数值 + 滑块的填充长度（ui.css 的 .range 用 --p）
+    const el = $(k); $(k + "V").textContent = (+el.value).toFixed(k === "thickness" ? 3 : 2);
+    el.style.setProperty("--p", `${((el.value - el.min) / (el.max - el.min)) * 100}%`);
+  };
+  $(k).addEventListener("input", out); out();
+}
+document.querySelectorAll("input[name=mode]").forEach((r) => r.addEventListener("change", () => {
+  document.querySelectorAll(".local-only").forEach((x) => { x.style.opacity = r.value === "cloud" && r.checked ? .4 : 1; });
+}));
+$("gen").addEventListener("click", async () => {
+  if (!srcPath) return;
+  $("gen").disabled = true; $("genBar").style.width = "3%";
+  try {
+    const mode = document.querySelector("input[name=mode]:checked").value;
+    const r = await api("/api/model3d/generate", { path: srcPath, name: $("name").value.trim(), mode,
+      strength: +$("strength").value, thickness: +$("thickness").value, smooth: +$("smooth").value });
+    for (;;) {
+      await new Promise((ok) => setTimeout(ok, 1200));
+      const j = await api("/api/model3d/job?id=" + r.job);
+      $("genBar").style.width = `${Math.round((j.progress || 0) * 100)}%`; $("genState").textContent = j.msg || "";
+      if (j.status === "done") { $("genState").textContent = `好了：${j.result.name}`; await load(j.result.name); break; }
+      if (j.status === "error") throw new Error(j.error);
+      if (j.status === "missing") throw new Error("任务不见了（琴房重启过？）");
+    }
+  } catch (err) { $("genState").textContent = err.message; }
+  $("gen").disabled = false;
+});
+window.addEventListener("message", (e) => {                 // 从设置里刚启用：外壳切过来时刷新一下
+  if (e.origin === location.origin && e.data && e.data.shown) load(sel && sel.name).catch(() => {});
+});
+load().catch((err) => { $("libDir").textContent = err.message; });
+</script>
+<script type="module">
+// ---- 左下角的 3D 预览：地面网格 + Blender 习惯的坐标轴（X 红、Y 绿在地面上，Z 蓝朝上）；只在拖动 / 缩放 / 换模型时重画
+import * as THREE from "three";
+import { OrbitControls } from "/ui/three-orbit.js";
+import { GLTFLoader } from "/ui/three-gltfloader.js";
+
+const box = document.getElementById("viewer");
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "low-power" });
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+box.prepend(renderer.domElement);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(40, 1, 0.01, 200);
+camera.position.set(2.6, 2.1, 4.2);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0.9, 0);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x3a3a44, 1.6));
+const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(3, 6, 4); scene.add(sun);
+const fill = new THREE.DirectionalLight(0xffffff, 0.6); fill.position.set(-4, 2, -3); scene.add(fill);
+// 地面网格：每格 0.5 米，共 10 米；坐标轴画法和 Blender 一样（three.js 的 Y 朝上 = Blender 的 Z；three.js 的 -Z = Blender 的 Y）
+const grid = new THREE.GridHelper(10, 20, 0x5a5a66, 0x34343c); scene.add(grid);
+function axis(to, color) {
+  const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0.001, 0), to]);
+  scene.add(new THREE.Line(g, new THREE.LineBasicMaterial({ color })));
+}
+axis(new THREE.Vector3(5, 0.001, 0), 0xe5484d);       // X（红）
+axis(new THREE.Vector3(0, 0.001, -5), 0x7ec34a);      // Y（绿，Blender 的前后方向）
+axis(new THREE.Vector3(0, 1.2, 0), 0x3d7be8);         // Z（蓝，朝上）
+function label(text, pos, color) {
+  const c = document.createElement("canvas"); c.width = c.height = 64;
+  const x = c.getContext("2d"); x.fillStyle = color; x.font = "bold 44px Segoe UI, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle";
+  x.fillText(text, 32, 34);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false }));
+  s.position.copy(pos); s.scale.set(0.22, 0.22, 1); scene.add(s);
+}
+label("X", new THREE.Vector3(1.35, 0.05, 0), "#e5484d");
+label("Y", new THREE.Vector3(0, 0.05, -1.35), "#7ec34a");
+label("Z", new THREE.Vector3(0, 1.35, 0), "#3d7be8");
+
+let model = null, pending = false;
+const render = () => { pending = false; renderer.render(scene, camera); };
+const ask = () => { if (!pending) { pending = true; requestAnimationFrame(render); } };   // 合并到下一帧，只画一次
+controls.addEventListener("change", ask);
+new ResizeObserver(() => {
+  const w = box.clientWidth, h = box.clientHeight;
+  renderer.setSize(w, h, false); camera.aspect = w / Math.max(h, 1); camera.updateProjectionMatrix(); ask();
+}).observe(box);
+const loader = new GLTFLoader();
+window.M3D.show = (url, name) => {
+  if (model) { scene.remove(model); model.traverse((o) => { o.geometry?.dispose(); [].concat(o.material || []).forEach((m) => { m.map?.dispose(); m.dispose(); }); }); model = null; }
+  document.getElementById("vName").textContent = name || "";
+  document.getElementById("vEmpty").hidden = !!url;
+  if (!url) return ask();
+  loader.load(url, (g) => {
+    model = g.scene;
+    model.traverse((o) => { if (o.isMesh && o.material) { o.material.side = THREE.DoubleSide; if (o.material.map) o.material.alphaTest = 0.5; } });
+    scene.add(model);
+    const b = new THREE.Box3().setFromObject(model), s = b.getSize(new THREE.Vector3()), c = b.getCenter(new THREE.Vector3());
+    const r = Math.max(s.x, s.y, s.z) || 1;
+    controls.target.copy(c);
+    camera.position.set(c.x + r * 0.9, c.y + r * 0.55, c.z + r * 1.9);   // 正面偏右上的 3/4 视角（正面朝 +Z）
+    controls.update(); ask();
+  }, undefined, (err) => { document.getElementById("vEmpty").hidden = false; document.getElementById("vEmpty").textContent = "模型加载失败：" + err.message; });
+};
+ask();
+if (window.__pendingPick) window.M3D.show(...window.__pendingPick);
+</script>
+</body>
+</html>

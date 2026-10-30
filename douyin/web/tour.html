@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>发布台</title>
+<script src="/ui/settings.js"></script>
+<link rel="stylesheet" href="/ui/ui.css">
+<style>
+.wrap { width: min(1080px, 100% - 48px); margin: 0 auto; padding-bottom: 120px; }
+.account { display: flex; align-items: center; gap: 10px; padding: 5px 14px 5px 5px; border-radius: 999px; }
+.account img, .account .ph { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; background: var(--fill); display: grid; place-items: center; }
+.account b { display: block; font-size: calc(var(--fs) * .95); line-height: 1.2; }
+.account small { display: block; color: var(--label-2); font-size: calc(var(--fs) * .78); }
+
+.step { display: flex; align-items: baseline; gap: 10px; margin: 28px 4px 10px; }
+.step i { font-style: normal; width: 22px; height: 22px; border-radius: 50%; display: inline-grid; place-items: center; flex: none;
+  background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); font: 700 12px var(--font-display); }
+.step b { font: 600 calc(var(--fs) * 1.15) var(--font-display); }
+.step span { color: var(--label-2); font-size: calc(var(--fs) * .88); }
+
+.pick { display: grid; grid-template-columns: 300px 1fr; gap: 20px; padding: 16px; border-radius: var(--r-lg); align-items: center; }
+.sleeve { aspect-ratio: 16 / 9; border-radius: 14px; background: var(--fill-2) center / cover no-repeat; box-shadow: var(--shadow); }
+.pick .meta { margin-top: 10px; color: var(--label-2); font-size: calc(var(--fs) * .9); line-height: 1.55; }
+.pick .facts { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; }
+.pick .facts span { padding: 2px 9px; border-radius: 6px; background: var(--fill-2); color: var(--label-2); font-size: calc(var(--fs) * .82); }
+
+.opts .row { flex-wrap: wrap; }
+
+.act { border-radius: var(--r-lg); margin-bottom: 12px; overflow: hidden; transition: opacity var(--t); }
+.act-head { display: flex; align-items: center; gap: 14px; padding: 14px 16px; }
+.act-head .text { flex: 1; min-width: 0; }
+.act-head .text b { display: block; font-weight: 600; font-size: calc(var(--fs) * 1.05); }
+.act-head .text small { color: var(--label-2); font-size: calc(var(--fs) * .84); }
+.logo { flex: none; width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; color: #fff; font: 700 15px var(--font-display);
+  box-shadow: inset 0 0 0 .5px rgba(255, 255, 255, .28); }
+.act-body { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; padding: 2px 16px 16px; border-top: .5px solid var(--sep); padding-top: 14px; }
+.act:not(.on) .act-body { display: none; }
+.act:not(.on) .logo { filter: grayscale(1) opacity(.55); }
+.fld { display: block; }
+.fld.wide { grid-column: 1 / -1; }
+.fld > span { display: flex; justify-content: space-between; color: var(--label-2); font-size: calc(var(--fs) * .84); margin-bottom: 5px; }
+.fld > span em { font: normal calc(var(--fs) * .82) var(--mono); color: var(--label-3); }
+.fld > span em.over { color: var(--danger); }
+.note { grid-column: 1 / -1; font-size: calc(var(--fs) * .84); color: var(--label-2); display: flex; gap: 6px; align-items: flex-start; }
+.note::before { content: "ⓘ"; color: var(--accent); }
+.detail { font-size: calc(var(--fs) * .84); color: var(--label-2); padding: 0 16px 12px; }
+.detail .miss { color: var(--warn); }
+.detail:empty { display: none; }
+
+.dock { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); width: min(1080px, 100% - 48px); z-index: 5;
+  display: flex; align-items: center; gap: 16px; padding: 12px 12px 12px 20px; border-radius: 20px; box-shadow: var(--shadow); }
+.dock p { flex: 1; margin: 0; color: var(--label-2); font-size: calc(var(--fs) * .88); line-height: 1.45; }
+.empty { padding: 30px; text-align: center; color: var(--label-2); border-radius: var(--r-lg); }
+@media (max-width: 860px) { .pick { grid-template-columns: 1fr; } .act-body { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="headline">
+    <div>
+      <h1>发布台</h1>
+      <div class="sub">选好成片，逐个平台填好内容，停在「发布」按钮前由你确认</div>
+    </div>
+    <div class="tools">
+      <div class="account material" id="account" title="琴房开头里设置的头像和名字">
+        <span class="ph" id="avatar">♪</span>
+        <div><b id="accName">我的账号</b><small>发布账号以各平台登录为准</small></div>
+      </div>
+      <button class="b gray" id="refresh" type="button">刷新</button>
+    </div>
+  </header>
+
+  <div class="step"><i>1</i><b>成片</b><span>视频文件夹里的作品</span></div>
+  <section class="pick material" id="pick">
+    <div class="sleeve" id="cover"></div>
+    <div>
+      <select class="select" id="video" aria-label="选择要发布的成片"></select>
+      <div class="facts" id="facts"></div>
+      <div class="meta" id="meta"></div>
+    </div>
+  </section>
+
+  <div class="step"><i>2</i><b>发布选项</b></div>
+  <section class="group material opts">
+    <div class="row">
+      <div class="text"><b>画幅</b><small>抖音、小红书、视频号、快手默认用竖屏版</small></div>
+      <div class="segmented" role="radiogroup" aria-label="发布画幅">
+        <label><input type="radio" name="tourOrient" value="auto" checked><span>竖屏平台发竖屏版</span></label>
+        <label><input type="radio" name="tourOrient" value="horizontal"><span>全部发横屏版</span></label>
+      </div>
+    </div>
+    <div class="row">
+      <div class="text"><b>自主声明</b><small>在上传页的「自主声明」里选择（目前支持抖音）</small></div>
+      <div class="segmented" role="radiogroup" aria-label="自主声明">
+        <label><input type="radio" name="tourDeclare" value="ai"><span>内容由 AI 生成</span></label>
+        <label><input type="radio" name="tourDeclare" value="none" checked><span>不声明</span></label>
+      </div>
+    </div>
+  </section>
+
+  <div class="step"><i>3</i><b>平台</b><span>打开开关的平台会依次上传并填好内容</span></div>
+  <div id="program"></div>
+</div>
+
+<div class="dock material">
+  <p id="hint">会打开一个专用的 Edge 窗口，逐个平台上传并填好内容，停在「发布」按钮前等你检查。第一次使用每个平台需要扫码登录一次。</p>
+  <button class="b filled lg" id="start" type="button" disabled>开始发布</button>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const api = async (url) => { const r = await fetch(url); const d = await r.json(); if (!r.ok || d.error) throw new Error(d.error || r.statusText); return d; };
+const post = async (url, body) => {
+  const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const d = await r.json(); if (!r.ok || d.error) throw new Error(d.error || r.statusText); return d;
+};
+function toast(msg, err) {
+  const t = $("#toast"); t.textContent = msg; t.className = "toast on" + (err ? " err" : "");
+  clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove("on"), 2800);
+}
+const LOGO = { douyin: ["抖", "#111111"], xiaohongshu: ["书", "#FF2442"], bilibili: ["B", "#00A1D6"], kuaishou: ["快", "#FF4906"], channels: ["视", "#07C160"] };
+const PILL = { queued: "等待中", open: "打开中", login: "请扫码登录", uploading: "上传中", ready: "已填好", error: "出错" };
+const tour = { folder: null, polling: false, items: [] };
+const splitTags = (s) => s.split(/[,，\s]+/).map((t) => t.replace(/^#/, "")).filter(Boolean);
+
+// 平台勾选沿用琴房原来的记录（localStorage: qinfang.tour）
+function prefs() {
+  try { return JSON.parse(localStorage.getItem("qinfang.tour")) || ["douyin", "xiaohongshu", "bilibili"]; }
+  catch (e) { return ["douyin", "xiaohongshu", "bilibili"]; }
+}
+function savePrefs() {
+  const keys = [...document.querySelectorAll(".act.on")].map((r) => r.dataset.key);
+  try { localStorage.setItem("qinfang.tour", JSON.stringify(keys)); } catch (e) { /* 忽略 */ }
+  $("#start").disabled = !keys.length || tour.polling || !tour.folder;
+}
+
+async function loadAccount() {
+  try {
+    const a = await api("/api/intro");
+    if (a.left_name) $("#accName").textContent = a.left_name;
+    if (a.avatar) { const img = document.createElement("img"); img.src = a.avatar; img.alt = ""; $("#avatar").replaceWith(img); }
+  } catch (e) { /* 没有头像设置时保持默认 */ }
+}
+async function loadItems() {
+  try { tour.items = await api("/api/library"); } catch (e) { return toast(e.message, true); }
+  const sel = $("#video"), prev = tour.folder;
+  sel.innerHTML = "";
+  if (!tour.items.length) {
+    sel.innerHTML = '<option value="">还没有成片，先在琴房或音轨剪辑里生成一条</option>';
+    $("#program").innerHTML = '<div class="empty material">没有可以发布的成片</div>';
+    tour.folder = null; savePrefs(); return;
+  }
+  tour.items.forEach((it) => {
+    const o = document.createElement("option"); o.value = it.folder; o.textContent = `${it.title}（${it.time}）`; sel.appendChild(o);
+  });
+  sel.value = tour.items.some((i) => i.folder === prev) ? prev : tour.items[0].folder;
+  await select(sel.value);
+}
+async function select(folder) {
+  tour.folder = folder;
+  const it = tour.items.find((i) => i.folder === folder);
+  $("#cover").style.backgroundImage = it && it.cover ? `url("${it.cover}")` : "";
+  $("#facts").innerHTML = "";
+  if (it) [{ piano: "钢琴", tracks: "音轨", intro: "开头" }[it.kind] || "作品", it.time, `${it.size_mb} MB`].forEach((t) => {
+    const s = document.createElement("span"); s.textContent = t; $("#facts").appendChild(s);
+  });
+  let d;
+  try { d = await api("/api/publish/defaults?folder=" + encodeURIComponent(folder)); } catch (e) { return toast(e.message, true); }
+  $("#meta").textContent = d.has_vertical ? "竖屏版已生成，抖音、小红书、视频号、快手会用竖屏版。"
+    : d.has_job ? "竖屏平台需要竖屏版，开始发布时会先自动生成（音轨作品只有横屏版，会直接用横屏版）。"
+    : "这条成片缺少生成参数，竖屏平台会直接使用横屏版。";
+  const chosen = prefs(), box = $("#program");
+  box.innerHTML = "";
+  d.platforms.forEach((p) => {
+    const row = document.createElement("section");
+    row.className = "act material" + (chosen.includes(p.key) ? " on" : "");
+    row.dataset.key = p.key;
+    const [ch, col] = LOGO[p.key] || [p.name[0], "#8E8E93"];
+    row.innerHTML = `
+      <div class="act-head">
+        <span class="logo" style="background:${col}">${ch}</span>
+        <div class="text"><b></b><small></small></div>
+        <span class="pill">未开始</span>
+        <label class="switch"><input type="checkbox" aria-label="发布到这个平台"><i></i></label>
+      </div>
+      <div class="detail"></div>
+      <div class="act-body">
+        ${p.title_max ? '<label class="fld wide"><span>标题<em data-c="title"></em></span><input class="input" type="text" data-f="title"></label>' : ""}
+        <label class="fld wide"><span>文案<em data-c="desc"></em></span><textarea class="textarea" data-f="desc"></textarea></label>
+        <label class="fld wide"><span>话题（空格分隔，不用加 #）<em data-c="tags"></em></span><input class="input" type="text" data-f="tags"></label>
+        <div class="note"></div>
+      </div>`;
+    row.querySelector(".text b").textContent = p.name;
+    row.querySelector(".text small").textContent = p.vertical ? "竖屏版" : "横屏版";
+    row.querySelector(".note").textContent = p.note;
+    if (!p.note) row.querySelector(".note").remove();
+    const cb = row.querySelector("input[type=checkbox]");
+    cb.checked = chosen.includes(p.key);
+    cb.addEventListener("change", () => { row.classList.toggle("on", cb.checked); savePrefs(); });
+    const f = (n) => row.querySelector(`[data-f="${n}"]`), c = (n) => row.querySelector(`[data-c="${n}"]`);
+    if (f("title")) f("title").value = p.title;
+    f("desc").value = p.desc; f("tags").value = p.tags.join(" ");
+    const count = () => {
+      if (f("title")) {
+        const n = [...f("title").value].length;
+        c("title").textContent = `${n}/${p.title_max}`;
+        c("title").classList.toggle("over", n > p.title_max || (p.title_min && n < p.title_min));
+      }
+      const dn = [...f("desc").value].length;
+      c("desc").textContent = `${dn}/${p.desc_max}`; c("desc").classList.toggle("over", dn > p.desc_max);
+      const tn = splitTags(f("tags").value).length;
+      c("tags").textContent = `${tn}/${p.tag_max}`; c("tags").classList.toggle("over", tn > p.tag_max);
+    };
+    row.querySelectorAll("[data-f]").forEach((el) => el.addEventListener("input", count));
+    count();
+    row._spec = p;
+    box.appendChild(row);
+  });
+  savePrefs();
+}
+
+async function start() {
+  const platforms = {};
+  for (const row of document.querySelectorAll(".act.on")) {
+    const p = row._spec, f = (n) => row.querySelector(`[data-f="${n}"]`);
+    const title = f("title") ? f("title").value.trim() : "";
+    if (p.title_max && [...title].length > p.title_max) return toast(`${p.name}的标题超过 ${p.title_max} 字，请缩短`, true);
+    if (p.title_min && title && [...title].length < p.title_min) return toast(`${p.name}的标题至少 ${p.title_min} 字`, true);
+    platforms[p.key] = { title, desc: f("desc").value.trim(), tags: splitTags(f("tags").value).slice(0, p.tag_max),
+                         ai_declare: document.querySelector("input[name=tourDeclare]:checked").value === "ai" };
+  }
+  try {
+    const orientation = document.querySelector("input[name=tourOrient]:checked").value;
+    const { id } = await post("/api/publish", { folder: tour.folder, platforms, orientation });
+    tour.polling = true; $("#start").disabled = true; $("#video").disabled = true;
+    document.querySelectorAll(".act.on .pill").forEach((el) => { el.className = "pill"; el.textContent = "等待中"; });
+    toast("正在打开发布窗口");
+    poll(id);
+  } catch (e) { toast(e.message, true); }
+}
+async function poll(id) {
+  let job;
+  try { job = await api("/api/jobs/" + id); } catch (e) { return setTimeout(() => poll(id), 2000); }
+  for (const [key, st] of Object.entries(job.platforms || {})) {
+    const row = document.querySelector(`.act[data-key="${key}"]`);
+    if (!row) continue;
+    const pill = row.querySelector(".pill"), det = row.querySelector(".detail");
+    pill.className = "pill " + (st.state || ""); pill.textContent = PILL[st.state] || st.state;
+    det.textContent = st.msg || "";
+    if (st.missing && st.missing.length) {
+      const m = document.createElement("div"); m.className = "miss"; m.textContent = "需要手动填写：" + st.missing.join("、"); det.appendChild(m);
+    }
+  }
+  if (job.stage === "vertical") $("#hint").textContent = `${job.message} ${Math.round((job.progress || 0) * 100)}%`;
+  else if (job.stage === "waiting") $("#hint").textContent = job.message;
+  if (job.status === "done" || job.status === "failed") {
+    tour.polling = false; $("#video").disabled = false; savePrefs();
+    if (job.status === "failed") { $("#hint").textContent = job.error || "发布失败"; toast(job.error || "发布失败", true); }
+    else { $("#hint").textContent = "发布窗口已关闭。记得到各平台确认作品状态。"; toast("发布窗口已关闭"); }
+    return;
+  }
+  setTimeout(() => poll(id), 1200);
+}
+
+$("#video").addEventListener("change", (e) => select(e.target.value));
+$("#start").addEventListener("click", start);
+$("#refresh").addEventListener("click", () => { if (!tour.polling) loadItems(); });
+// 软件外壳的消息：切回来时刷新；从作品集「发布到各平台」跳过来时选中那条成片
+window.addEventListener("message", async (e) => {
+  if (e.origin !== location.origin || !e.data || tour.polling) return;
+  if (e.data.tourFolder) { tour.folder = e.data.tourFolder; await loadItems(); }
+  else if (e.data.shown) loadItems();
+});
+loadAccount();
+loadItems();
+</script>
+<!-- 文字操作按钮换成简化图标（web/ui/iconize.js） -->
+<script src="/ui/iconize.js"></script>
+<script>window.Iconize.apply([{ sel: "#refresh", icon: "refresh" }]);</script>
+</body>
+</html>

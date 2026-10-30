@@ -1,0 +1,16 @@
+# TRA$H - Patience（AWAKE Vol. 2），由录音分离旋律乐器后转写，535 个音符
+title: "Patience"
+subtitle: "TRA$H"
+watermark: "@谬紫克！"
+key_range: auto        # 琴键按实际音域裁剪（这首用不到最高的一个半八度）
+
+# 爆款开头
+intro: true
+intro_cover: covers/TRASH_Patience.jpg
+intro_artist: "TRA$H"
+intro_title: "Patience"
+
+# 发布信息（可在琴房里改）
+douyin_title: "凌晨三点还醒着的人，听听这首"
+tags: [lofi, 钢琴, 纯音乐, 助眠, TRASH]
+description: "有些等待没有结果，但等待本身也算一种答案。"

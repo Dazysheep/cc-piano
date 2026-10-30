@@ -1,0 +1,14 @@
+{
+  "title": "One More Light",
+  "artist": "Linkin Park",
+  "audio": "D:/cc-engine/.tmp/oml/source.mp3",
+  "start": 0.0,
+  "duration": 102.0,
+  "intro": 4.0,
+  "final_image": "../images/01_one_more_light.jpg",
+  "images": [],
+  "intro_from_library": true,
+  "douyin_title": "又一盏灯熄灭了，也有人在乎",
+  "description": "把这首歌拆成一条条音轨，才发现每一层都在用力地说再见。",
+  "tags": ["林肯公园", "OneMoreLight", "音乐", "编曲", "多轨"]
+}

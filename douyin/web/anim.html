@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>动画库</title>
+<script src="/ui/settings.js"></script>
+<link rel="stylesheet" href="/ui/ui.css">
+<style>
+html, body { height: 100%; }
+body { overflow: hidden; }
+.page { height: 100%; display: grid; grid-template-columns: 190px minmax(0, 1fr) 420px; }
+.col { min-height: 0; display: flex; flex-direction: column; }
+.cats { border-right: 1px solid var(--sep); padding: 18px 10px; gap: 4px; }
+.cats h2 { margin: 0 8px 12px; font-size: calc(var(--fs) * 1.1); }
+.cat { display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; border: 0; border-radius: 10px;
+  background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.cat:hover { background: var(--fill-2); }
+.cat.on { background: color-mix(in srgb, var(--accent) 20%, transparent); }
+.cat small { color: var(--label-2); }
+.grid-wrap { overflow: auto; padding: 18px; }
+.grid-wrap h3 { margin: 0 0 4px; font-size: calc(var(--fs) * 1.05); }
+.grid-wrap .hint { color: var(--label-2); font-size: calc(var(--fs) * .82); margin-bottom: 14px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.grid.wide { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.item { display: flex; flex-direction: column; gap: 6px; padding: 10px; border: 1px solid transparent; border-radius: 14px;
+  background: var(--fill-2); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.item:hover { border-color: var(--sep); }
+.item.on { border-color: var(--accent); }
+.thumb { aspect-ratio: 1; display: grid; place-items: center; border-radius: 10px; overflow: hidden;
+  background: repeating-conic-gradient(#2a2a30 0 25%, #222228 0 50%) 0 / 18px 18px; }
+.grid.wide .thumb { aspect-ratio: 16 / 9; background: #111; }
+.thumb img { max-width: 92%; max-height: 92%; image-rendering: pixelated; }
+.thumb img.cover { width: 100%; height: 100%; object-fit: cover; image-rendering: auto; max-width: none; max-height: none; }
+.item b { font-size: calc(var(--fs) * .9); }
+.item small { color: var(--label-2); font-size: calc(var(--fs) * .76); }
+.detail { border-left: 1px solid var(--sep); }
+.detail .top { padding: 16px 16px 10px; display: flex; align-items: center; gap: 8px; }
+.detail .top h2 { margin: 0; flex: 1; font-size: calc(var(--fs) * 1.05); }
+.btn { padding: 6px 12px; border: 0; border-radius: 999px; background: var(--fill); color: var(--label); font: inherit;
+  font-size: calc(var(--fs) * .8); cursor: pointer; }
+.btn:hover { background: color-mix(in srgb, var(--accent) 28%, transparent); }
+.btn.primary { background: var(--accent); color: #fff; }
+.btn[disabled] { opacity: .45; cursor: default; }
+.scroll { flex: 1; min-height: 0; overflow: auto; padding: 0 16px 10px; }
+.big { border-radius: 14px; overflow: hidden; display: grid; place-items: center; min-height: 200px;
+  background: repeating-conic-gradient(#2a2a30 0 25%, #222228 0 50%) 0 / 20px 20px; }
+.big img { max-width: 80%; max-height: 260px; image-rendering: pixelated; }
+.big video { width: 100%; display: block; background: #000; }
+.meta { margin: 10px 0; color: var(--label-2); font-size: calc(var(--fs) * .82); }
+.vers { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.vers span { padding: 2px 9px; border-radius: 999px; background: var(--fill); font: calc(var(--fs) * .76) var(--mono); }
+details { margin-bottom: 10px; }
+summary { cursor: pointer; color: var(--label-2); font-size: calc(var(--fs) * .82); }
+pre { margin: 6px 0 0; padding: 10px; border-radius: 10px; background: var(--fill-2); font: calc(var(--fs) * .74)/1.5 var(--mono);
+  white-space: pre-wrap; word-break: break-all; max-height: 260px; overflow: auto; }
+.chat { border-top: 1px solid var(--sep); display: flex; flex-direction: column; max-height: 48%; min-height: 220px; }
+.chat .msgs { flex: 1; overflow: auto; padding: 10px 16px; display: flex; flex-direction: column; gap: 8px; }
+.msg { max-width: 92%; padding: 8px 12px; border-radius: 14px; font-size: calc(var(--fs) * .86); line-height: 1.55; white-space: pre-wrap; }
+.msg.user { align-self: flex-end; background: var(--accent); color: #fff; }
+.msg.ai { align-self: flex-start; background: var(--fill); }
+.msg.sys { align-self: center; color: var(--label-2); font-size: calc(var(--fs) * .76); background: none; }
+.proposal { align-self: stretch; border: 1px solid var(--accent); border-radius: 12px; padding: 8px 10px; }
+.proposal .row { display: flex; gap: 8px; margin-top: 8px; }
+.chat form { display: flex; gap: 8px; padding: 10px 16px 14px; }
+.chat textarea { flex: 1; resize: none; height: 54px; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--sep);
+  background: var(--fill-2); color: var(--label); font: inherit; font-size: calc(var(--fs) * .88); }
+.modal { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(0, 0, 0, .5); z-index: 9; }
+.modal[hidden] { display: none; }
+.modal > div { width: min(440px, 92vw); padding: 20px; border-radius: 18px; background: var(--bg-2); border: 1px solid var(--sep);
+  display: flex; flex-direction: column; gap: 10px; }
+.modal label { display: flex; flex-direction: column; gap: 4px; font-size: calc(var(--fs) * .84); color: var(--label-2); }
+.modal input { padding: 8px 10px; border-radius: 10px; border: 1px solid var(--sep); background: var(--fill-2); color: var(--label); font: inherit; }
+.empty { color: var(--label-2); padding: 40px 10px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="page">
+  <nav class="col cats" id="cats"><h2>动画库</h2></nav>
+  <section class="col grid-wrap"><h3 id="secTitle"></h3><div class="hint" id="secHint"></div><div class="grid" id="grid"></div></section>
+  <section class="col detail">
+    <div class="top"><h2 id="dTitle">选一个动画</h2><button class="btn" id="apiBtn" type="button">API 设置</button></div>
+    <div class="scroll" id="dBody"><div class="empty">左边选一类，中间点一个动画，在这里预览、查看版本，用下面的聊天框改它。</div></div>
+    <div class="chat">
+      <div class="msgs" id="msgs"><div class="msg sys">选中一个表情、开头或结尾动画后，在这里用一句话告诉 AI 想怎么改。</div></div>
+      <form id="chatForm"><textarea id="chatIn" placeholder="比如：让她唱歌时头摇得慢一点，多冒几个音符" disabled></textarea>
+        <button class="btn primary" id="sendBtn" type="submit" disabled>发送</button></form>
+    </div>
+  </section>
+</div>
+<div class="modal" id="apiModal" hidden><div>
+  <b>聊天设计用的大模型（OpenAI 兼容接口）</b>
+  <label>接口地址<input id="apiBase" placeholder="https://api.deepseek.com"></label>
+  <label>模型<input id="apiModel" placeholder="deepseek-chat"></label>
+  <label>密钥（只存在你电脑的用户环境变量 CC_PIANO_LLM_KEY 里，不会显示出来）<input id="apiKey" type="password" placeholder="不改就留空"></label>
+  <div class="meta" id="apiState"></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="apiCancel" type="button">取消</button>
+    <button class="btn primary" id="apiSave" type="button">保存</button></div>
+</div></div>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+async function api(path, body) {
+  const r = await fetch(path, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {});
+  const j = await r.json();
+  if (!r.ok || j.error) throw new Error(j.error || "出错了");
+  return j;
+}
+const CATS = [
+  { key: "male", zh: "男生表情", hint: "读评论的男生 CC 小人。每个都是沿着人物边缘裁好的透明动图，可以直接拿去用。" },
+  { key: "female", zh: "女生表情", hint: "唱歌的女生 CC 小人（蝴蝶结、睫毛）。" },
+  { key: "visions", zh: "想象画面", hint: "男生读完评论，头顶云朵里浮现的画面。" },
+  { key: "hd_male", zh: "手绘·男生", hint: "水彩手绘的男生 CC（handdrawn 工作室画的），透明动图。以后每首歌按需要再画新的。" },
+  { key: "hd_female", zh: "手绘·女生", hint: "水彩手绘的女生 CC（蝴蝶结、睫毛、蓝眼睛），透明动图。" },
+  { key: "hd_scenes", zh: "手绘画面", hint: "按每首歌的歌词和评论重新手绘的云朵画面（编剧和视频里叫 hd_<名字>）。" },
+  { key: "opening", zh: "开头动画", hint: "视频开头的小剧场。预览用的是示例歌名和封面。" },
+  { key: "ending", zh: "结尾动画", hint: "视频结尾的小剧场。" },
+];
+let LIB = null, cat = "male", sel = null, history = [];
+
+function items(k) {
+  if (!LIB) return [];
+  if (k === "male" || k === "female") return LIB.characters[k];
+  return LIB[k] || [];
+}
+function renderCats() {
+  $("cats").innerHTML = "<h2>动画库</h2>" + CATS.map((c) =>
+    `<button class="cat${c.key === cat ? " on" : ""}" data-k="${c.key}" type="button"><span>${c.zh}</span><small>${items(c.key).length}</small></button>`).join("");
+}
+function renderGrid() {
+  const c = CATS.find((x) => x.key === cat);
+  $("secTitle").textContent = c.zh; $("secHint").textContent = c.hint;
+  const wide = cat === "opening" || cat === "ending";
+  $("grid").className = "grid" + (wide ? " wide" : "");
+  $("grid").innerHTML = items(cat).map((it, i) => {
+    const pic = wide ? (it.poster ? `<img class="cover" src="${it.poster}" alt="">` : "<small>还没有预览</small>")
+      : (it.preview ? `<img src="${it.preview}" alt="">` : "");
+    const sub = wide ? `v${it.versions.at(-1)} · ${it.versions.length} 个版本`
+      : (it.zh || "") + (it.versions && it.versions.length ? ` · v${it.versions.at(-1)}` : "");
+    const on = sel && sel.cat === cat && sel.i === i ? " on" : "";
+    return `<button class="item${on}" data-i="${i}" type="button"><div class="thumb">${pic}</div><b>${esc(it.name)}</b><small>${esc(sub)}</small></button>`;
+  }).join("") || '<div class="empty">这里还没有动画</div>';
+}
+async function select(i) {
+  const it = items(cat)[i];
+  sel = { cat, i, it };
+  renderGrid();
+  history = [];
+  const editable = it.kind !== "vision" && it.kind !== "handdrawn";
+  $("chatIn").disabled = $("sendBtn").disabled = !editable;
+  $("msgs").innerHTML = `<div class="msg sys">${editable ? `正在设计「${esc(it.name)}」。说说想怎么改，AI 会给出一个新方案，你决定要不要采用（采用会存成新版本，旧版本都保留）。`
+    : it.kind === "handdrawn" ? "手绘的画面在 douyin/handdrawn 工作室里用代码画，要改的话跟 Claude 说。" : "想象画面是代码画的，目前不能用聊天修改。"}</div>`;
+  $("dTitle").textContent = it.zh ? `${it.name} · ${it.zh}` : it.name;
+  const wide = it.kind === "opening" || it.kind === "ending";
+  const media = wide ? (it.preview ? `<video src="${it.preview}" controls autoplay loop muted playsinline poster="${it.poster || ""}"></video>` : '<div class="empty">还没有预览</div>')
+    : `<img src="${it.preview}" alt="">`;
+  let data = null;
+  if (editable) {
+    try { data = await api(`/api/anim/item?kind=${it.kind}&name=${encodeURIComponent(it.name)}&who=${it.who || "male"}`); } catch (e) { data = { error: e.message }; }
+  }
+  const vers = (it.versions || []).map((v) => `<span>v${v}</span>`).join("") || "<span>原始</span>";
+  $("dBody").innerHTML = `<div class="big">${media}</div>
+    <div class="meta">${esc(it.note || (it.kind === "clip" ? "原始片段，还没有改过的版本" : ""))}</div>
+    <div class="vers">${vers}</div>
+    ${it.kind === "clip" ? `<div class="vers"><a class="btn" href="${it.preview}" download>下载透明动图</a>${it.webm ? `<a class="btn" href="${it.webm}" download>下载 webm</a>` : ""}</div>` : ""}
+    ${data ? `<details><summary>当前 JSON（AI 改的就是它）</summary><pre>${esc(JSON.stringify(data, null, 1))}</pre></details>` : ""}`;
+}
+function addMsg(cls, html) {
+  const d = document.createElement("div");
+  d.className = "msg " + cls; d.innerHTML = html;
+  $("msgs").appendChild(d); $("msgs").scrollTop = 1e9;
+  return d;
+}
+$("chatForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const text = $("chatIn").value.trim();
+  if (!text || !sel) return;
+  $("chatIn").value = "";
+  addMsg("user", esc(text));
+  const wait = addMsg("sys", "AI 正在想……");
+  $("sendBtn").disabled = true;
+  const it = sel.it;
+  try {
+    const r = await api("/api/anim/chat", { kind: it.kind, name: it.name, who: it.who, message: text, history });
+    wait.remove();
+    history.push({ role: "user", content: text }, { role: "assistant", content: r.reply + (r.proposal ? "\n" + JSON.stringify(r.proposal) : "") });
+    addMsg("ai", esc(r.reply));
+    if (r.proposal) {
+      const p = document.createElement("div");
+      p.className = "proposal";
+      p.innerHTML = `<b>新方案</b><pre>${esc(JSON.stringify(r.proposal, null, 1))}</pre>
+        <div class="row"><button class="btn primary" type="button">采用（存成新版本并生成预览）</button></div>`;
+      p.querySelector("button").addEventListener("click", () => adopt(it, r.proposal, p));
+      $("msgs").appendChild(p); $("msgs").scrollTop = 1e9;
+    }
+  } catch (err) {
+    wait.remove();
+    addMsg("sys", esc(err.message));
+    if (/API 设置/.test(err.message)) openApi();
+  }
+  $("sendBtn").disabled = false;
+});
+$("chatIn").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("chatForm").requestSubmit(); } });
+
+async function adopt(it, data, box) {
+  const b = box.querySelector("button");
+  b.disabled = true; b.textContent = "保存中…";
+  try {
+    const r = await api("/api/anim/save", { kind: it.kind, name: it.name, who: it.who, data });
+    b.textContent = `已存为 v${r.version}，正在生成预览…`;
+    for (;;) {
+      await new Promise((ok) => setTimeout(ok, 1500));
+      const j = await api("/api/anim/job?id=" + r.job);
+      if (j.status === "done") break;
+      if (j.status === "error") throw new Error("预览没生成：" + j.error);
+      b.textContent = `已存为 v${r.version}，正在生成预览 ${Math.round((j.progress || 0) * 100)}%`;
+    }
+    b.textContent = `已采用 v${r.version}`;
+    const keep = sel.i, keepCat = sel.cat;
+    await load();
+    cat = keepCat; renderCats(); renderGrid(); select(keep);
+  } catch (err) { b.disabled = false; b.textContent = "采用（存成新版本并生成预览）"; addMsg("sys", esc(err.message)); }
+}
+
+function openApi() {
+  const l = LIB ? LIB.llm : {};
+  $("apiBase").value = l.base_url || ""; $("apiModel").value = l.model || ""; $("apiKey").value = "";
+  $("apiState").textContent = l.has_key ? "已经配置过密钥（不显示）。" : "还没有配置密钥。";
+  $("apiModal").hidden = false;
+}
+$("apiBtn").addEventListener("click", openApi);
+$("apiCancel").addEventListener("click", () => { $("apiModal").hidden = true; });
+$("apiSave").addEventListener("click", async () => {
+  try {
+    LIB.llm = await api("/api/anim/llm", { base_url: $("apiBase").value.trim(), model: $("apiModel").value.trim(), key: $("apiKey").value.trim() });
+    $("apiModal").hidden = true;
+    addMsg("sys", "API 设置已保存" + (LIB.llm.has_key ? "。" : "，但还没有密钥。"));
+  } catch (e) { $("apiState").textContent = e.message; }
+});
+
+$("cats").addEventListener("click", (e) => { const b = e.target.closest(".cat"); if (!b) return; cat = b.dataset.k; renderCats(); renderGrid(); });
+$("grid").addEventListener("click", (e) => { const b = e.target.closest(".item"); if (b) select(+b.dataset.i); });
+// 外壳切走时停掉预览视频的声音（预览本身是静音的，以后有声音也不会叠）
+window.addEventListener("message", (e) => {
+  if (e.origin === location.origin && e.data && e.data.hidden) document.querySelectorAll("video").forEach((v) => v.pause());
+});
+async function load() { LIB = await api("/api/anim/library"); }
+const wantCat = new URLSearchParams(location.search).get("cat");        // 链接直接打开某一类
+if (CATS.some((c) => c.key === wantCat)) cat = wantCat;
+load().then(() => { renderCats(); renderGrid(); }).catch((e) => { $("grid").innerHTML = `<div class="empty">${esc(e.message)}</div>`; });
+</script>
+</body>
+</html>

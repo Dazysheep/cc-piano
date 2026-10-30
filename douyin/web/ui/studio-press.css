@@ -1,0 +1,13 @@
+/* 琴房「Finale」出片区：「生成视频」整行（右边是文件包），字小一号、圆角更规整；「试渲染 15 秒」放到下面，做成次要的描边按钮。
+   只在琴房页面引用（index.html 末尾），不改它原来的样式规则。 */
+.press > .row { display: grid !important; grid-template-columns: 1fr; gap: 10px; }
+.press > .row > .fb-wrap { order: -1; gap: 10px; }
+.press > .row #fullRender { height: 48px; padding: 0 20px !important; border-radius: 14px; justify-content: center;
+  font-family: "Segoe UI Variable Text", "Segoe UI", "Microsoft YaHei UI", sans-serif; font-size: 15px !important; font-weight: 600;
+  letter-spacing: .1em; box-shadow: 0 10px 26px -12px rgba(164, 151, 255, .75); }
+.press > .row #fullRender:not([disabled]):hover { filter: brightness(1.06); transform: translateY(-1px); }
+.press > .row .fb-bag { width: 48px; height: 48px; border-radius: 14px; }
+.press > .row #previewRender { height: 40px; justify-content: center; border-radius: 12px; font-size: 13.5px; letter-spacing: .06em;
+  background: transparent; border: 1px solid rgba(255, 255, 255, .14); color: rgba(238, 240, 246, .72); }
+.press > .row #previewRender:not([disabled]):hover { background: rgba(255, 255, 255, .06); color: #fff; border-color: rgba(255, 255, 255, .26); }
+.press > .row #previewRender[disabled], .press > .row #fullRender[disabled] { opacity: .45; }

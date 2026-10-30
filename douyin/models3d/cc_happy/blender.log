@@ -1,0 +1,15 @@
+INFO Draco mesh compression is available, use library at D:\cc-engine\douyin\tools\blender\blender-4.5.15-windows-x64\4.5\scripts\addons_core\io_scene_gltf2\extern_draco.dll
+01:17:14 | INFO: Starting glTF 2.0 export
+01:17:14 | INFO: Extracting primitive: relief
+01:17:14 | WARNING: More than one shader node tex image used for a texture. The resulting glTF sampler will behave like the first shader node tex image.
+01:17:14 | INFO: Primitives created: 1
+01:17:14 | INFO: Finished glTF 2.0 export in 0.09001708030700684 s
+Blender 4.5.15 LTS (hash 5afeabba6097 built 2026-10-22 01:35:27)
+Saved: 'D:\cc-engine\douyin\models3d\cc_happy\thumb.png'
+Time: 00:01.00 (Saving: 00:00.13)
+
+
+Info: Saved as "model.blend"
+cc-piano relief done: D:\cc-engine\douyin\models3d\cc_happy 40922 verts
+
+Blender quit

@@ -1,0 +1,39 @@
+{
+  "mcpServers": {
+    "drawio-skill": {
+      "type": "stdio",
+      "command": "python",
+      "args": [".claude/skills/drawio-skill/scripts/diagramctl_mcp.py"],
+      "env": {
+        "PYTHONIOENCODING": "utf-8"
+      }
+    },
+    "blender": {
+      "type": "stdio",
+      "command": "blender-mcp",
+      "args": [],
+      "env": {
+        "BLENDER_HOST": "localhost",
+        "BLENDER_PORT": "9876",
+        "BLENDER_MCP_DISABLE_TELEMETRY": "1",
+        "DISABLE_TELEMETRY": "1",
+        "BLENDERMCP_NO_UPDATE_CHECK": "1",
+        "PYTHONIOENCODING": "utf-8"
+      }
+    },
+    "llm-wiki": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["workflow/llm-wiki/app/mcp-server/dist/src/index.js"],
+      "env": {
+        "LLM_WIKI_API_BASE_URL": "http://127.0.0.1:19828",
+        "LLM_WIKI_API_TOKEN": "${LLM_WIKI_API_TOKEN}"
+      }
+    },
+    "windows-mcp": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["--python", "3.14", "windows-mcp", "serve"]
+    }
+  }
+}

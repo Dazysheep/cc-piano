@@ -1,0 +1,108 @@
+@import url("https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;900&display=swap");
+
+:root {
+  --bg: #f4efe6;
+  --surface: #fbf8f2;
+  --text: #2b2520;
+  --muted: #8a7f73;
+  --border: #d9cfc0;
+  --accent: #b5532f;
+  --code-bg: #ebe4d7;
+  --serif: "Noto Serif SC", "Songti SC", "SimSun", Georgia, serif;
+}
+
+:root[data-theme="dark"] {
+  --bg: #1d1a17;
+  --surface: #25211d;
+  --text: #ece4d8;
+  --muted: #a39686;
+  --border: #3d362f;
+  --accent: #e08a62;
+  --code-bg: #2f2a25;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  line-height: 1.85;
+  transition: background .2s, color .2s;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+.container { max-width: 720px; margin: 0 auto; padding: 0 16px; }
+
+/* 头部：居中刊头 */
+.site-header { border-bottom: 3px double var(--border); }
+.header-inner { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 36px 16px 18px; }
+.logo {
+  font-family: var(--serif); font-size: 2.4rem; font-weight: 900;
+  letter-spacing: .2em; color: var(--text);
+}
+.logo:hover { text-decoration: none; color: var(--accent); }
+nav { display: flex; align-items: center; gap: 28px; font-size: .9rem; letter-spacing: .15em; }
+nav a { color: var(--muted); }
+nav a:hover { color: var(--accent); text-decoration: none; }
+.theme-toggle { background: none; border: none; cursor: pointer; font-size: 1rem; padding: 0; }
+
+main.container { min-height: calc(100vh - 220px); padding-top: 36px; padding-bottom: 56px; }
+
+/* 搜索 & 标签 */
+.toolbar { display: flex; flex-direction: column; align-items: center; gap: 16px; margin-bottom: 32px; }
+.search {
+  width: 100%; max-width: 420px; padding: 8px 4px; font-size: 1rem; text-align: center;
+  border: none; border-bottom: 1px solid var(--border);
+  background: transparent; color: var(--text); font-family: var(--serif);
+}
+.search:focus { outline: none; border-bottom-color: var(--accent); }
+.tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 16px; }
+.tag {
+  font-size: .85rem; padding: 0; border: none; background: none;
+  color: var(--muted); cursor: pointer; font-family: inherit;
+}
+.tag::before { content: "#"; opacity: .6; }
+.tag.active, .tag:hover { color: var(--accent); text-decoration: none; }
+.tag.active { font-weight: 600; }
+
+/* 文章列表：分隔线代替卡片 */
+.post-card { padding: 28px 0; border-bottom: 1px solid var(--border); }
+.post-card:first-child { padding-top: 0; }
+.post-card h2 { margin: 0 0 6px; font-family: var(--serif); font-size: 1.6rem; font-weight: 600; line-height: 1.4; }
+.post-card h2 a { color: var(--text); }
+.post-card h2 a:hover { color: var(--accent); text-decoration: none; }
+.meta { color: var(--muted); font-size: .85rem; display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; }
+.excerpt { margin: 12px 0 0; color: var(--text); opacity: .8; }
+.empty { text-align: center; color: var(--muted); padding: 48px 0; font-family: var(--serif); }
+
+/* 文章详情 */
+.post h1 { font-family: var(--serif); font-size: 2.3rem; font-weight: 900; line-height: 1.35; margin: 0 0 12px; text-align: center; }
+.post > .meta { justify-content: center; margin-bottom: 40px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+.post-body { font-size: 1.05rem; }
+.post-body > p:first-child::first-letter {
+  float: left; font-family: var(--serif); font-size: 3.4em; line-height: 1;
+  margin: 4px 10px 0 0; color: var(--accent); font-weight: 900;
+}
+.post-body h2 { margin-top: 2.2em; font-family: var(--serif); font-size: 1.45rem; }
+.post-body h3 { margin-top: 1.8em; font-family: var(--serif); font-size: 1.2rem; }
+.post-body code { font-family: Consolas, "SF Mono", Menlo, monospace; background: var(--code-bg); padding: 2px 6px; border-radius: 3px; font-size: .9em; }
+.post-body pre { background: var(--code-bg); padding: 16px 20px; border-left: 3px solid var(--accent); font-size: 1rem; line-height: 1.6; overflow-x: auto; }
+.post-body pre code { background: none; padding: 0; }
+.post-body blockquote {
+  margin: 1.6em 0; padding: 0 24px; border: none; text-align: center;
+  font-family: var(--serif); font-size: 1.3rem; font-style: italic; color: var(--accent);
+}
+.post-body img { max-width: 100%; }
+.post-nav { display: flex; justify-content: space-between; gap: 16px; margin-top: 56px; padding-top: 24px; border-top: 3px double var(--border); font-family: var(--serif); }
+
+.site-footer { border-top: 1px solid var(--border); padding: 24px 0; color: var(--muted); font-size: .85rem; text-align: center; letter-spacing: .1em; }
+
+@media (max-width: 600px) {
+  .logo { font-size: 1.9rem; }
+  .post h1 { font-size: 1.8rem; }
+  .post-card h2 { font-size: 1.35rem; }
+}

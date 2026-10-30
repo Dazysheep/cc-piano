@@ -1,0 +1,17 @@
+{
+ "note": "在 v2 上改回横屏 16:9（用户 2026-10-24 决定全部做横屏）；保留约 60 秒卡点截取、开头直接进高潮、重拍推近、开头钩子文案",
+ "theme": "sunset",
+ "backdrop": true,
+ "grain": 0,
+ "fireworks": true,
+ "lyrics": true,
+ "loop": true,
+ "intro": 3.0,
+ "intro_from_library": true,
+ "duration": 60,
+ "cold_open": true,
+ "snap_beats": true,
+ "fade_in_beats": 1,
+ "fade_out_beats": 2,
+ "pulse": 0.015
+}

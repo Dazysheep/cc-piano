@@ -1,0 +1,18 @@
+{
+ "note": "在 v3 上去掉开头所有文字（拨片开头不写歌名歌手，不加钩子文案），只留拨片动画；用户 2026-10-24 要求",
+ "theme": "sunset",
+ "backdrop": true,
+ "grain": 0,
+ "fireworks": true,
+ "lyrics": true,
+ "loop": true,
+ "intro": 3.0,
+ "intro_from_library": true,
+ "duration": 60,
+ "cold_open": true,
+ "snap_beats": true,
+ "fade_in_beats": 1,
+ "fade_out_beats": 2,
+ "pulse": 0.015,
+ "intro_text": false
+}

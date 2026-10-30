@@ -1,0 +1,19 @@
+{
+ "note": "在 v4 上：拨片开头恢复歌名和歌手；两人模式（cast: duo）——女生小人左下角唱歌（歌词跟在她右边），男生小人读网易云评论、头顶想象云朵浮现画面，结尾两人走到中间鞠躬；小人缩小。用户 2026-10-25 要求",
+ "theme": "sunset",
+ "backdrop": true,
+ "grain": 0,
+ "fireworks": true,
+ "lyrics": true,
+ "loop": true,
+ "intro": 3.0,
+ "intro_from_library": true,
+ "duration": 60,
+ "cold_open": true,
+ "snap_beats": true,
+ "fade_in_beats": 1,
+ "fade_out_beats": 2,
+ "pulse": 0.015,
+ "intro_text": true,
+ "cast": "duo"
+}

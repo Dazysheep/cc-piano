@@ -1,0 +1,134 @@
+{
+  "title": "最佳损友",
+  "artist": "陈奕迅",
+  "audio": "D:\\cc-engine\\douyin\\收件箱\\2018199780.mov",
+  "template": "daw@v6",
+  "start": 18.0,
+  "douyin_title": "我让Claude读了最佳损友的评论区：老朋友不知道新生活",
+  "description": "《最佳损友》，陈奕迅。\n\n我让 Claude 读了一遍这首歌的网易云评论区。二十三万条留言里，有人说「新朋友不知道旧脾气，老朋友不知道新生活」，有人说「我们似乎也没有天大的矛盾，只是滞留在了某一个黄昏」，也有人说真正的好朋友，迷茫的时候拉一把，难过的时候抱一下。\n\n把它拆成人声、钢琴和吉他三条音轨听，开头小剧场里 CC 打了「在吗」又删掉，结尾在路口遇见了老朋友。\n\n你还记得最后一次和最好的朋友聊天，说的是什么吗？评论区告诉我。",
+  "tags": [
+    "音轨拆解",
+    "最佳损友",
+    "陈奕迅",
+    "网易云音乐",
+    "Claude"
+  ],
+  "intro_from_library": false,
+  "final_image": "D:\\cc-engine\\workflow\\data\\produce\\2018199780\\cover_user.jpg",
+  "images": [],
+  "duration": 96,
+  "intro": 24.0,
+  "pace": 1.6,
+  "tracks_keep": [
+    "vocals",
+    "piano",
+    "guitar"
+  ],
+  "opening": {
+    "name": "zaima"
+  },
+  "ending": {
+    "name": "crossing",
+    "version": 2
+  },
+  "ending_seconds": 12,
+  "solos": [
+    {
+      "track": "vocals",
+      "from": 43.3,
+      "to": 48.3,
+      "label": "只听人声"
+    },
+    {
+      "track": "piano",
+      "from": 57.4,
+      "to": 62.4,
+      "label": "只听钢琴"
+    }
+  ],
+  "moments": [
+    {
+      "kind": "clink_glass",
+      "from": 32.6,
+      "to": 38.6
+    },
+    {
+      "kind": "photo_split",
+      "from": 50.4,
+      "to": 56.4
+    },
+    {
+      "kind": "fork_road",
+      "from": 74.6,
+      "to": 80.6
+    }
+  ],
+  "story": {
+    "acts": [
+      {
+        "name": "炫耀过你",
+        "from": 27.0,
+        "to": 37.5,
+        "cards": [
+          {
+            "text": "突然听懂了最佳损友，并不是件值得高兴的事。我记得我向别人炫耀过你。后来你成了我的禁忌。",
+            "track": "vocals",
+            "mood": "nostalgic",
+            "vision": "photo_flip",
+            "girl": "shy"
+          }
+        ]
+      },
+      {
+        "name": "某一个黄昏",
+        "from": 39.5,
+        "to": 51.0,
+        "cards": [
+          {
+            "text": "我们似乎也没有天大的矛盾，只是滞留在了某一个黄昏，从此也没能参与对方的日日夜夜。",
+            "track": "vocals",
+            "solo": true,
+            "mood": "lonely",
+            "vision": "dusk_stuck",
+            "girl": "nostalgic"
+          }
+        ]
+      },
+      {
+        "name": "八十岁",
+        "from": 54.0,
+        "to": 65.5,
+        "cards": [
+          {
+            "text": "几年前你觉得这人就是你这辈子最好的朋友了，掏心掏肺两肋插刀恨不能变成一个人，立誓八十岁也要混在一起。转眼间到了今天，竟然和陌生人没什么区别。",
+            "track": "piano",
+            "mood": "sad",
+            "vision": "eighty_bubble",
+            "girl": "sad"
+          }
+        ]
+      },
+      {
+        "name": "损友",
+        "from": 67.5,
+        "to": 78.0,
+        "cards": [
+          {
+            "text": "真正的好朋友，互损不会翻脸，出钱不会计较，地位不分高低，成功无需巴结，失败不会离去，迷茫的时候拉一把，难过的时候抱一下。",
+            "track": "guitar",
+            "mood": "happy",
+            "vision": "pillow_fight",
+            "girl": "happy"
+          }
+        ]
+      }
+    ],
+    "finale": {
+      "from": 81.0,
+      "text": "毕竟难得有过最佳损友",
+      "sub": "—— Vincent木鱼"
+    }
+  },
+  "lyrics_text": "最佳损友.lyrics.txt",
+  "lyric_size": 56
+}

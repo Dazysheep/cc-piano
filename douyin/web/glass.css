@@ -1,0 +1,75 @@
+/* 琴房软件：暗色毛玻璃主题（覆盖 index.html / flick.html 的配色，新页面共用）
+   性能：大面积背景只用静态渐变；毛玻璃 backdrop-filter 只用在少量浮层上，避免滚动卡顿。 */
+:root {
+  --velvet: #090a10;
+  --velvet-deep: #06070b;
+  --ebony: #12141c;
+  --ivory: #eef0f6;
+  --ivory-2: rgba(238, 240, 246, .66);
+  --ivory-3: rgba(238, 240, 246, .42);
+  --brass: #8e83ff;
+  --brass-hi: #c2bcff;
+  --felt: #ff5c78;
+  --rule: rgba(255, 255, 255, .09);
+  --glass: rgba(255, 255, 255, .045);
+  --glass-2: rgba(255, 255, 255, .075);
+  --glass-line: rgba(255, 255, 255, .09);
+  --accent-grad: linear-gradient(135deg, #a497ff 0%, #ff92c8 100%);
+  --display: "Segoe UI Variable Display", "Segoe UI", "Microsoft YaHei UI", sans-serif;
+  --text: "Microsoft YaHei UI", "Segoe UI Variable Text", "Segoe UI", "PingFang SC", sans-serif;
+  --mono: "Cascadia Mono", Consolas, monospace;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  color-scheme: dark;
+}
+body {
+  background:
+    radial-gradient(55% 45% at 12% 0%, rgba(122, 96, 255, .20), transparent 70%),
+    radial-gradient(45% 40% at 92% 8%, rgba(255, 110, 170, .12), transparent 70%),
+    radial-gradient(60% 55% at 70% 100%, rgba(50, 150, 255, .10), transparent 70%),
+    var(--velvet-deep) fixed;
+  font-family: var(--text);
+}
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .12); border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, .22); }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* 按钮：玻璃胶囊 */
+.btn { background: var(--glass); border-color: var(--glass-line); }
+.btn:hover { background: var(--glass-2); border-color: rgba(255, 255, 255, .2); }
+.btn.primary { background: var(--accent-grad); color: #12101c; border-color: transparent; box-shadow: 0 8px 24px -10px rgba(164, 151, 255, .8); }
+.btn .count { background: var(--accent-grad); color: #12101c; }
+.play { background: var(--accent-grad); color: #12101c; }
+
+/* 面板 */
+.stage-shell { background: var(--glass); border: 1px solid var(--glass-line); box-shadow: 0 30px 80px -40px rgba(0, 0, 0, .9); }
+.drop { background: radial-gradient(ellipse at 50% 40%, rgba(122, 96, 255, .18), rgba(5, 5, 8, .25) 70%); }
+.drop:hover, .drop.over { background: radial-gradient(ellipse at 50% 40%, rgba(164, 151, 255, .28), rgba(5, 5, 8, .3) 70%); }
+.press, .panel { background: rgba(20, 22, 32, .62); border: 1px solid var(--glass-line); backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%); box-shadow: 0 30px 70px -40px rgba(0, 0, 0, .9); }
+.asset, .seg { border-color: var(--glass-line); background: var(--glass); }
+.seg input:checked + span { background: var(--accent-grad); color: #12101c; }
+.asset .thumb { background-color: #0d0e14; }
+.lib-select, .tour-pick select, select { background: #141621; border-color: var(--glass-line); color: var(--ivory); border-radius: 10px; }
+.movement h3 { border-bottom-color: var(--glass-line); }
+.movement h3 i { background: var(--accent-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.field input[type=text], .field textarea { border-bottom-color: rgba(255, 255, 255, .16); }
+.field input[type=text]:focus, .field textarea:focus { border-bottom-color: var(--brass-hi); }
+.record .sleeve { background-color: #0d0e14; }
+.meter .fill::after { background: #ff92c8; box-shadow: 0 0 12px #ff92c8; }
+dialog { background: rgba(16, 18, 26, .92); border-color: var(--glass-line); backdrop-filter: blur(26px); -webkit-backdrop-filter: blur(26px); }
+dialog::backdrop { background: rgba(4, 5, 9, .7); backdrop-filter: blur(4px); }
+.toast { background: rgba(240, 242, 250, .96); color: #12101c; }
+.disc .label { background-color: #1a1c26; }
+.wordmark .la { color: var(--brass-hi); }
+.pill.ready { background: var(--accent-grad); border-color: transparent; color: #12101c; }
+
+/* 嵌在软件外壳（app.html）里时 */
+html.embed .masthead { padding: 22px 0 16px; }
+html.embed .masthead .wordmark .zh { font-size: 30px; }
+html.embed a.btn[href="/"] { display: none; }
+html.embed #goShelf, html.embed #goTour { display: none; }
+html[data-view="studio"] .shelf, html[data-view="studio"] .tour { display: none; }
+html[data-view="tour"] .masthead, html[data-view="tour"] .stage-shell, html[data-view="tour"] .desk,
+html[data-view="tour"] .shelf { display: none; }
+html[data-view="tour"] .tour { border-top: 0; padding-top: 28px; }

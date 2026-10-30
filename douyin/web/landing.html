@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cc-piano</title>
+<link rel="icon" href="/ui/icon.png">
+<script src="/ui/settings.js"></script>
+<script src="/ui/winctl.js"></script>
+<script>   // 设置里关掉了「启动时显示开端页」就直接进工作台
+  if (window.StudioSettings && window.StudioSettings.get().landing === false && !location.search.includes("show")) location.replace("/app");
+</script>
+<style>
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; background: #000; color: #fff;
+  font-family: "Segoe UI Variable Display", "Segoe UI", "Microsoft YaHei UI", sans-serif; -webkit-font-smoothing: antialiased; }
+canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity .8s ease; }
+body.ready canvas { opacity: 1; }
+/* 第一帧画出来之前入场动画先停着：启动时多个任务挤在一起会让动画一卡一卡 */
+body:not(.ready) .eyebrow, body:not(.ready) h1, body:not(.ready) .tag, body:not(.ready) .container,
+body:not(.ready) .enter, body:not(.ready) .hint { animation-play-state: paused; }
+.veil { position: fixed; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 60% 55% at 50% 42%, rgba(0, 0, 0, .78), rgba(0, 0, 0, .25) 60%, transparent 80%); }
+main { position: relative; z-index: 2; height: 100%; display: grid; place-content: center; justify-items: center; padding-bottom: 14vh;
+  transition: opacity .6s ease, transform .8s cubic-bezier(.6, 0, .2, 1), filter .6s; }
+body.leaving main { opacity: 0; transform: scale(1.06); filter: blur(6px); }
+body.leaving canvas { transition: opacity .7s ease .15s; opacity: 0; }
+body.on-keys { cursor: pointer; }
+.eyebrow { font-size: 12px; letter-spacing: .5em; color: rgba(255, 255, 255, .5); margin-bottom: 18px; text-indent: .5em;
+  opacity: 0; animation: rise .9s .1s cubic-bezier(.2, .8, .2, 1) forwards; }
+h1 { margin: 0; font-size: clamp(56px, 9vw, 128px); font-weight: 700; letter-spacing: .08em; line-height: 1; text-indent: .08em;
+  background: linear-gradient(180deg, #fff 30%, rgba(255, 255, 255, .45)); -webkit-background-clip: text; background-clip: text; color: transparent;
+  opacity: 0; animation: rise 1s .2s cubic-bezier(.2, .8, .2, 1) forwards; }
+html[lang="en"] h1 { font-size: clamp(48px, 7.4vw, 108px); letter-spacing: .14em; text-indent: .14em; }
+.tag { margin: 18px 0 54px; font-size: clamp(14px, 1.4vw, 18px); color: rgba(255, 255, 255, .62); letter-spacing: .12em;
+  opacity: 0; animation: rise 1s .35s cubic-bezier(.2, .8, .2, 1) forwards; }
+@keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+
+/* 玻璃卡片：收起时笔直叠放（不旋转、没有弧度），悬停时横向展开；名称只在展开时出现 */
+.container { position: relative; display: flex; justify-content: center; align-items: center; opacity: 0; animation: rise 1s .5s cubic-bezier(.2, .8, .2, 1) forwards; }
+.container .glass { position: relative; z-index: var(--z); width: 168px; height: 196px; border: 1px solid rgba(255, 255, 255, .14); border-radius: 12px; margin: 0 -62px;
+  background: linear-gradient(rgba(255, 255, 255, .14), rgba(255, 255, 255, .02)); box-shadow: 0 25px 25px rgba(0, 0, 0, .35);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; cursor: pointer;
+  transition: .5s cubic-bezier(.2, .8, .2, 1); color: #fff; padding: 0; font: inherit; }
+.container:hover .glass, .container:focus-within .glass { margin: 0 10px; }
+.container .glass:hover, .container .glass:focus-visible { transform: translateY(-14px); background: linear-gradient(rgba(255, 255, 255, .24), rgba(255, 255, 255, .05));
+  border-color: rgba(255, 255, 255, .4); outline: none; }
+.container .glass::before { content: attr(data-text); position: absolute; bottom: 0; width: 100%; height: 42px; border-radius: 0 0 12px 12px;
+  background: rgba(255, 255, 255, .06); display: flex; justify-content: center; align-items: center; color: #fff; font-size: 14px; letter-spacing: .14em;
+  opacity: 0; transform: translateY(6px); transition: opacity .3s, transform .4s cubic-bezier(.2, .8, .2, 1); }
+.container:hover .glass::before, .container:focus-within .glass::before { opacity: 1; transform: none; transition-delay: .18s; }
+.container .glass svg { width: 46px; height: 46px; fill: none; stroke: #fff; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+  transition: margin .5s cubic-bezier(.2, .8, .2, 1); }
+.container:hover .glass svg, .container:focus-within .glass svg { margin-bottom: 30px; }
+
+.enter { margin-top: 60px; display: flex; align-items: center; gap: 16px; opacity: 0; animation: rise 1s .7s cubic-bezier(.2, .8, .2, 1) forwards; }
+.enter button { display: inline-flex; align-items: center; gap: 10px; padding: 14px 30px; border-radius: 999px; border: 0; cursor: pointer;
+  background: #fff; color: #000; font-family: inherit; font-size: 16px; font-weight: 600; letter-spacing: .08em; transition: transform .2s, box-shadow .3s; }
+.enter button:hover { transform: translateY(-2px); box-shadow: 0 14px 40px -10px rgba(255, 255, 255, .55); }
+.enter button svg { width: 18px; height: 18px; transition: transform .3s; }
+.enter button:hover svg { transform: translateX(4px); }
+.enter kbd { font: 12px "Cascadia Mono", Consolas, monospace; color: rgba(255, 255, 255, .45); border: 1px solid rgba(255, 255, 255, .2); border-radius: 6px; padding: 3px 8px; }
+
+.sound { position: fixed; z-index: 3; right: 22px; top: 18px; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px 0 11px;
+  border-radius: 999px; border: 1px solid rgba(255, 255, 255, .18); background: rgba(255, 255, 255, .06); color: rgba(255, 255, 255, .8);
+  font-family: inherit; font-size: 12.5px; font-weight: 500; letter-spacing: .06em; cursor: pointer; backdrop-filter: blur(8px); transition: background .2s, color .2s; }
+.sound:hover { background: rgba(255, 255, 255, .14); color: #fff; }
+/* 流畅模式：卡片和声音按钮不再实时虚化后面一直在动的画布，换成同色调的半透明实底 */
+[data-perf="on"] .container .glass { backdrop-filter: none; -webkit-backdrop-filter: none;
+  background: linear-gradient(rgba(255, 255, 255, .14), rgba(255, 255, 255, .02)), rgba(18, 18, 20, .88); }
+[data-perf="on"] .sound { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(28, 28, 30, .9); }
+.sound svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.sound .wave { transition: opacity .2s; }
+.sound.off .wave { opacity: 0; }
+.sound.off .mute { opacity: 1; }
+.sound .mute { opacity: 0; }
+.hint { position: fixed; z-index: 3; left: 50%; transform: translateX(-50%); bottom: calc(min(120px, 13vh) + 14px); font-size: 12px; letter-spacing: .2em;
+  color: rgba(255, 255, 255, .38); pointer-events: none; opacity: 0; animation: rise 1s 1.1s forwards; }
+@media (max-width: 760px) { .container .glass { width: 120px; height: 150px; margin: 0 -46px; } .container .glass svg { width: 34px; height: 34px; } }
+@media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<canvas id="bg" aria-hidden="true"></canvas>
+<div class="veil"></div>
+<button class="sound" id="sound" type="button">
+  <svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path class="wave" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/><path class="mute" d="m16 9 5 6M21 9l-5 6"/></svg>
+  <span data-i18n="sound"></span></button>
+<main>
+  <div class="eyebrow">MUSIC VIDEO STUDIO</div>
+  <h1 data-i18n="title"></h1>
+  <div class="tag" data-i18n="tag"></div>
+  <div class="container" role="navigation" data-i18n-aria="nav">
+    <button data-tab="studio" style="--z:1" class="glass" type="button">
+      <svg viewBox="0 0 48 48"><rect x="6" y="10" width="36" height="28" rx="3"/><path d="M15 10v28M24 10v28M33 10v28"/><path d="M12 10v15h6V10M30 10v15h6V10" fill="#fff" stroke="none"/></svg></button>
+    <button data-tab="tracks" style="--z:2" class="glass" type="button">
+      <svg viewBox="0 0 48 48"><path d="M8 20v8M14 14v20M20 18v12M26 8v32M32 16v16M38 21v6"/></svg></button>
+    <button data-tab="flick" style="--z:3" class="glass" type="button">
+      <svg viewBox="0 0 48 48"><rect x="11" y="16" width="26" height="24" rx="3"/><path d="M15 11h18M19 6h10"/></svg></button>
+    <button data-tab="edit" style="--z:3" class="glass" type="button">
+      <svg viewBox="0 0 48 48"><circle cx="13" cy="13" r="5"/><circle cx="13" cy="35" r="5"/><path d="M17 16 40 32M17 32 40 16"/></svg></button>
+    <button data-tab="tour" style="--z:2" class="glass" type="button">
+      <svg viewBox="0 0 48 48"><path d="M41 7 20 28M41 7 28 41l-8-13-13-8z"/></svg></button>
+    <button data-tab="works" style="--z:1" class="glass" type="button">
+      <svg viewBox="0 0 48 48"><rect x="7" y="7" width="14" height="14" rx="2.5"/><rect x="27" y="7" width="14" height="14" rx="2.5"/><rect x="7" y="27" width="14" height="14" rx="2.5"/><rect x="27" y="27" width="14" height="14" rx="2.5"/></svg></button>
+  </div>
+  <div class="enter">
+    <button id="enter" type="button"><span data-i18n="enter"></span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    <kbd>Enter</kbd>
+  </div>
+</main>
+<div class="hint" data-i18n="hint"></div>
+
+<script>
+const ST = window.StudioSettings;
+// ---------- 文字（跟随设置：开端页文字 English / 中文） ----------
+const TEXT = {
+  en: { title: "cc-piano", tag: "Let every song be seen", enter: "Enter Studio", hint: "TAP THE KEYS TO PLAY", nav: "Open a workspace",
+        soundOn: "Sound on", soundOff: "Sound off",
+        cards: { studio: "Piano", tracks: "Tracks", flick: "Flick Intro", edit: "Edit", tour: "Publish", works: "Works" } },
+  zh: { title: "cc-piano", tag: "让每一首歌，被看见", enter: "进入工作台", hint: "点击琴键弹奏", nav: "进入工作台的页面",
+        soundOn: "声音开", soundOff: "声音关",
+        cards: { studio: "琴房", tracks: "音轨剪辑", flick: "拨片开头", edit: "剪辑", tour: "发布台", works: "作品集" } },
+};
+function applyText() {
+  const s = ST.get(), lang = TEXT[s.landingLang] ? s.landingLang : "en", T = TEXT[lang];
+  document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+  document.title = "cc-piano";
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const k = el.dataset.i18n;
+    el.textContent = k === "sound" ? (s.landingSound ? T.soundOn : T.soundOff) : T[k];
+  });
+  document.querySelector("[data-i18n-aria]").setAttribute("aria-label", T.nav);
+  document.querySelectorAll(".glass").forEach((b) => { b.dataset.text = T.cards[b.dataset.tab]; b.setAttribute("aria-label", T.cards[b.dataset.tab]); });
+  document.getElementById("sound").classList.toggle("off", !s.landingSound);
+}
+ST.on(applyText);
+applyText();
+WinCtl.attach({ dragWidth: "calc(100% - 190px)" });     // 软件窗口的红黄绿三点；顶部可拖动（右上角留给声音按钮）
+
+// ---------- 进入工作台 ----------
+let leaving = false;
+function enter(tab) {
+  if (leaving) return;
+  leaving = true;
+  if (tab) { try { localStorage.setItem("studio.tab", tab); } catch (e) { /* 忽略 */ } }
+  document.body.classList.add("leaving");
+  setTimeout(() => location.assign(tab ? `/app?tab=${tab}` : "/app"), 650);
+}
+document.getElementById("enter").addEventListener("click", () => enter());
+document.querySelectorAll(".glass").forEach((b) => b.addEventListener("click", () => enter(b.dataset.tab)));
+window.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.target.closest(".glass, .sound")) enter(); });
+document.getElementById("sound").addEventListener("click", () => { ST.set({ landingSound: !ST.get().landingSound }); unlock(); });
+
+// ---------- 钢琴声（WebAudio 合成：基音 + 泛音 + 衰减包络） ----------
+let ac = null, master = null;
+function unlock() {
+  if (!ST.get().landingSound) return;
+  if (!ac) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    ac = new AC();
+    const comp = ac.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 4;
+    master = ac.createGain(); master.connect(comp).connect(ac.destination);
+  }
+  if (ac.state !== "running") ac.resume();
+}
+["pointerdown", "keydown"].forEach((ev) => window.addEventListener(ev, unlock, { capture: true }));
+unlock();      // 软件窗口（Edge 应用模式）允许直接出声；普通浏览器要先点一下
+function playNote(midi, vel) {
+  if (!ST.get().landingSound || !ac || ac.state !== "running") return false;
+  const now = ac.currentTime, f = 440 * Math.pow(2, (midi - 69) / 12);
+  const dur = 0.9 + (108 - midi) / 88 * 1.6;               // 低音持续更久
+  master.gain.value = Math.pow(ST.get().volume ?? 0.5, 1.4) * 0.9;
+  const env = ac.createGain(), lp = ac.createBiquadFilter();
+  lp.type = "lowpass"; lp.frequency.setValueAtTime(Math.min(12000, f * 7), now); lp.frequency.exponentialRampToValueAtTime(Math.max(300, f * 1.6), now + dur);
+  env.gain.setValueAtTime(0, now);
+  env.gain.linearRampToValueAtTime(0.22 * vel, now + 0.006);
+  env.gain.exponentialRampToValueAtTime(0.08 * vel, now + 0.25);
+  env.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+  lp.connect(env).connect(master);
+  [[1, 1, "triangle"], [2, 0.38, "sine"], [3, 0.16, "sine"], [4.02, 0.07, "sine"]].forEach(([k, g, type]) => {
+    const o = ac.createOscillator(), og = ac.createGain();
+    o.type = type; o.frequency.value = f * k; o.detune.value = (Math.random() - 0.5) * 4; og.gain.value = g;
+    o.connect(og).connect(lp); o.start(now); o.stop(now + dur + 0.05);
+  });
+  return true;
+}
+
+// ---------- 背景：落下的音符 + 钢琴键 + 后方滚动的音轨波形（黑白） ----------
+const cv = document.getElementById("bg"), g = cv.getContext("2d");
+let W = 0, H = 0, dpr = 1;
+// 预先画好的图：琴键底图（窗口大小变了才重画）、带渐变和发光的音符条（每帧只拉伸贴图，不再每帧算渐变和模糊）
+let keysImg = null;
+const noteImg = {};
+function makeNoteSprite(w) {
+  const pad = 16, c = document.createElement("canvas");
+  c.width = Math.ceil(w + pad * 2); c.height = 256;
+  const x = c.getContext("2d"), gr = x.createLinearGradient(0, 0, 0, 256);
+  gr.addColorStop(0, "rgba(255,255,255,.12)"); gr.addColorStop(1, "rgba(255,255,255,.85)");
+  x.shadowColor = "rgba(255,255,255,.6)"; x.shadowBlur = 14; x.fillStyle = gr;
+  x.beginPath(); x.roundRect(pad, 0, w, 256, Math.min(4, w / 2)); x.fill();
+  return { c, pad };
+}
+function prerender() {
+  const kbH = Math.min(120, H * 0.13), kw = W / 52;
+  keysImg = document.createElement("canvas"); keysImg.width = Math.ceil(W); keysImg.height = Math.ceil(kbH);
+  const x = keysImg.getContext("2d"), kg = x.createLinearGradient(0, 0, 0, kbH);
+  kg.addColorStop(0, "rgba(255,255,255,.2)"); kg.addColorStop(1, "rgba(255,255,255,.08)");
+  x.fillStyle = kg;
+  for (let k = 0; k < 52; k++) x.fillRect(k * kw + 0.5, 0, kw - 1, kbH);
+  noteImg.white = makeNoteSprite(kw * 0.8); noteImg.black = makeNoteSprite(kw * 0.55);
+}
+let KB = { kbH: 0, kbY: 0, kw: 1 }, glowImg = null;
+function fit() {
+  dpr = Math.min(devicePixelRatio || 1, 1.5); W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const kbH = Math.min(120, H * 0.13); KB = { kbH, kbY: H - kbH, kw: W / KEYS };    // 琴键尺寸：窗口变了才重算（原来每帧算约 90 次）
+  prerender();
+  const r = KB.kw * 3; glowImg = document.createElement("canvas"); glowImg.width = Math.ceil(r * 2); glowImg.height = Math.ceil(r);
+  const x = glowImg.getContext("2d"), rg = x.createRadialGradient(r, r, 0, r, r, r);  // 琴键发光：预先画好，每帧按亮度贴图（原来每帧新建渐变）
+  rg.addColorStop(0, "rgba(255,255,255,.35)"); rg.addColorStop(1, "rgba(255,255,255,0)");
+  x.fillStyle = rg; x.fillRect(0, 0, r * 2, r);
+}
+const KEYS = 52, BLACK = [1, 3, 6, 8, 10];          // 52 个白键（A0~C8）
+addEventListener("resize", fit); fit();
+const whiteOf = [], whiteMidi = [];                  // 半音 → 白键位置（黑键在两白键之间）；白键序号 → 半音
+(function () { let w = 0; for (let m = 21; m <= 108; m++) { const pc = m % 12; whiteOf[m] = BLACK.includes(pc) ? w - 0.5 : w; if (!BLACK.includes(pc)) { whiteMidi[w] = m; w++; } } })();
+const glow = new Float32Array(109);
+let notes = [], ripples = [], lastSpawn = 0, step = 0;
+// 和声进行 Am - F - C - G：左手根音 + 右手分解和弦
+const PROG = [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]];
+function spawn(t) {
+  const ch = PROG[Math.floor(step / 8) % 4], k = step % 8;
+  const pitch = k === 0 ? ch[0] - 12 : ch[k % 3] + 12 * (1 + (k > 4 ? 1 : 0));
+  notes.push({ p: pitch, t0: t, len: k === 0 ? 1.6 : 0.35 + Math.random() * 0.25, vel: k === 0 ? 0.9 : 0.55 });
+  if (k === 4 && Math.random() < 0.6) notes.push({ p: ch[(k + 1) % 3] + 24, t0: t + 0.12, len: 0.5, vel: 0.45 });
+  step++;
+}
+const FALL = 3.2;                                    // 音符从顶部落到琴键的秒数
+const lanes = Array.from({ length: 6 }, (_, i) => ({ seed: i * 17.3, amp: 0.4 + (i % 3) * 0.18 }));
+function wave(x, s) { return Math.abs(Math.sin(x * 0.021 + s) * Math.sin(x * 0.0063 + s * 1.7) + 0.35 * Math.sin(x * 0.071 + s * 3.1)); }
+const kb = () => KB;
+const keyX = (m) => (whiteOf[m] + 0.5) * KB.kw;
+
+// 一个音响起：琴键亮起 + 黑白圆环扩散 + 音符符号淡入淡出
+function sound(m, vel, big) {
+  glow[m] = 1;
+  const played = playNote(m, vel);
+  ripples.push({ x: keyX(m), t0: performance.now() / 1000, big: !!big, played });
+}
+// 点击琴键：上 60% 先看黑键，否则按白键
+function keyAt(x, y) {
+  const { kbH, kbY, kw } = kb();
+  if (y < kbY || y > H) return null;
+  if (y < kbY + kbH * 0.6) {
+    for (let m = 21; m <= 108; m++) if (BLACK.includes(m % 12) && Math.abs(x - keyX(m)) < kw * 0.3) return m;
+  }
+  return whiteMidi[Math.max(0, Math.min(KEYS - 1, Math.floor(x / kw)))];
+}
+window.addEventListener("pointerdown", (e) => {
+  if (e.target.closest("button, a, kbd")) return;
+  const m = keyAt(e.clientX, e.clientY);
+  if (m) { unlock(); setTimeout(() => sound(m, 0.85, true), ac && ac.state === "running" ? 0 : 60); }
+});
+window.addEventListener("pointermove", (e) => {
+  document.body.classList.toggle("on-keys", !e.target.closest("button") && keyAt(e.clientX, e.clientY) !== null);
+});
+
+let t0 = performance.now();
+function frame(now) {
+  if (document.hidden || leaving && now - t0 > 2000) return requestAnimationFrame(frame);
+  const t = (now - t0) / 1000, ts = now / 1000;
+  if (t - lastSpawn > 0.27) { spawn(t); lastSpawn = t; }
+  g.clearRect(0, 0, W, H);
+  const { kbH, kbY, kw } = kb();
+  // 音轨波形（后方，很淡）：从右往左滚动，播放头在 1/3 处
+  const lite = document.documentElement.dataset.perf === "on";            // 流畅模式：波形 3 条、采样点减半，琴键不发光
+  const ls = lite ? lanes.slice(0, 3) : lanes, xs = lite ? 8 : 4;
+  const laneTop = H * 0.12, laneH = (kbY - laneTop - 30) / ls.length, phX = W * 0.33;
+  g.lineWidth = 1;
+  g.strokeStyle = "rgba(255,255,255,.05)"; g.beginPath();                 // 六条轨道线：一次画完
+  ls.forEach((l, i) => { const y = laneTop + i * laneH + laneH / 2; g.moveTo(0, y); g.lineTo(W, y); });
+  g.stroke();
+  g.strokeStyle = "rgba(255,255,255,.075)"; g.beginPath();                // 六条波形：一次画完
+  ls.forEach((l, i) => {
+    const y = laneTop + i * laneH + laneH / 2, a = laneH * 0.36 * l.amp;
+    for (let x = 0; x <= W; x += xs) { const v = wave(x + t * 140, l.seed) * a; g.moveTo(x, y - v); g.lineTo(x, y + v); }
+  });
+  g.stroke();
+  g.fillStyle = "rgba(255,255,255,.22)"; g.fillRect(phX, laneTop - 10, 1, kbY - laneTop - 10);
+  // 落下的音符：碰到琴键的那一刻发声
+  notes = notes.filter((n) => t - n.t0 < FALL + n.len + 0.1);
+  for (const n of notes) {
+    const head = (t - n.t0) / FALL;
+    if (head >= 1 && !n.hit) { n.hit = true; sound(n.p, n.vel, false); }
+    if (head >= 1 && t - n.t0 - FALL < n.len) glow[n.p] = Math.max(glow[n.p], 0.9);
+    const yb = kbY * head, yt = yb - (n.len / FALL) * kbY;
+    const isB = BLACK.includes(n.p % 12), w = isB ? kw * 0.55 : kw * 0.8;
+    const x = (whiteOf[n.p] + 0.5) * kw - w / 2;
+    const top = Math.max(0, yt), bot = Math.min(kbY - 2, yb);
+    if (bot <= top) continue;
+    const sp = isB ? noteImg.black : noteImg.white;                         // 贴预先画好的发光音符条
+    g.drawImage(sp.c, x - sp.pad, top, sp.c.width, bot - top);
+  }
+  // 黑白圆环扩散 + 音符符号若隐若现
+  ripples = ripples.filter((r) => ts - r.t0 < 1.3);
+  for (const r of ripples) {
+    const age = (ts - r.t0) / 1.3, k = r.big ? 1 : 0.55;
+    const rad = (14 + age * 230) * k, fade = (1 - age) ** 1.6;
+    g.lineWidth = 2.2 * k + 0.6;
+    g.strokeStyle = `rgba(255,255,255,${0.75 * fade})`;
+    g.beginPath(); g.arc(r.x, kbY, rad, Math.PI, 2 * Math.PI); g.stroke();
+    g.lineWidth = 5 * k + 1;
+    g.strokeStyle = `rgba(0,0,0,${0.85 * fade})`;
+    g.beginPath(); g.arc(r.x, kbY, Math.max(1, rad - 7 * k), Math.PI, 2 * Math.PI); g.stroke();
+    g.lineWidth = 1;
+    g.strokeStyle = `rgba(255,255,255,${0.35 * fade})`;
+    g.beginPath(); g.arc(r.x, kbY, rad * 0.55, Math.PI, 2 * Math.PI); g.stroke();
+    if (r.big || r.played) {
+      const na = Math.sin(Math.PI * Math.min(1, age * 1.05)) * (r.big ? 1 : 0.6);   // 淡入再淡出
+      g.fillStyle = `rgba(255,255,255,${na})`;
+      g.font = `${Math.round((r.big ? 30 : 20) * (0.85 + age * 0.3))}px "Segoe UI Symbol", "Segoe UI", sans-serif`;
+      g.textAlign = "center";
+      g.fillText("♪", r.x + Math.sin(age * 6) * 6, kbY - 26 - age * (r.big ? 90 : 55));
+    }
+  }
+  // 琴键：白键 + 黑键，响起时发光
+  g.drawImage(keysImg, 0, kbY);                                             // 琴键底图（预先画好）
+  for (const black of [false, true]) {               // 先画白键的发光，再画黑键（黑键在上层）
+    for (let m = 21; m <= 108; m++) {
+      if (BLACK.includes(m % 12) !== black) continue;
+      glow[m] *= 0.92;
+      const x = keyX(m), v = Math.round(20 + glow[m] * 235);
+      if (black) { g.fillStyle = `rgb(${v},${v},${v})`; g.fillRect(x - kw * 0.3, kbY, kw * 0.6, kbH * 0.6); }
+      else if (glow[m] > 0.02) {
+        g.fillStyle = `rgba(255,255,255,${glow[m] * 0.75})`; g.fillRect(x - kw / 2 + 0.5, kbY, kw - 1, kbH);
+        if (!lite) { g.globalAlpha = glow[m]; g.drawImage(glowImg, x - kw * 3, kbY - kw * 3, kw * 6, kw * 3); g.globalAlpha = 1; }
+      }
+    }
+  }
+  g.fillStyle = "rgba(255,255,255,.35)"; g.fillRect(0, kbY - 1, W, 1);
+  if (++frames === 3) document.body.classList.add("ready");               // 前几帧画好后才开始入场动画和背景淡入
+  requestAnimationFrame(frame);
+}
+let frames = 0;
+requestAnimationFrame(frame);
+setTimeout(() => document.body.classList.add("ready"), 1200);            // 保底：页面不可见时也会开始
+// 停在开端页时，提前让服务端把作品列表、剪映缓存（第一次要读音频时长）、拨片图库准备好，进入工作台时不用等
+// 等入场动画放完（约 3 秒）再趁空闲一个接一个请求，不和动画抢（原来 1.5 秒时 4 个请求同时发，正赶上入场动画）
+const warm = ["/api/library?all=1", "/api/tracks/cache", "/api/flick/library", "/api/storage"];
+const idleDo = (fn) => (window.requestIdleCallback || ((f) => setTimeout(f, 300)))(fn, { timeout: 3000 });
+function warmNext() { const u = warm.shift(); if (u) idleDo(() => fetch(u).catch(() => {}).finally(warmNext)); }
+setTimeout(warmNext, 3200);
+</script>
+</body>
+</html>

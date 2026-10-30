@@ -1,0 +1,126 @@
+{
+  "title": "I Love You So",
+  "artist": "The Walters",
+  "audio": "D:\\cc-engine\\douyin\\收件箱\\3835331412.mov",
+  "template": "daw@v6",
+  "start": 10.2,
+  "douyin_title": "原来这首情歌，是写给父亲的",
+  "description": "I Love You So，The Walters。\n\n把它拆成 6 条音轨：吉他一直在原地打转，人声一遍遍唱 I love you so，又一遍遍唱 please let me go。\n\n八万多条评论里，有人想和喜欢的人在夕阳下牵着手走，有人隔着一罐蜂蜜看喜欢的人的后脑勺，有人终于和 crush 在一起；也有人后来才发现，这是一首写给父亲的歌——讨厌他，又心疼他。\n\n爱一个人和放开一个人，原来可以是同一句话。今晚两个小人唱给你听。",
+  "tags": [
+    "音轨拆解",
+    "ILoveYouSo",
+    "TheWalters",
+    "英文歌",
+    "治愈"
+  ],
+  "intro_final": "029.jpg",
+  "lyrics_text": "i_love_you_so.lyrics.txt",
+  "story": {
+    "acts": [
+      {
+        "name": "在一起",
+        "from": 21.5,
+        "to": 33.0,
+        "cards": [
+          {
+            "text": "比起那些黄文，我更喜欢你们牵着手在夕阳下走……",
+            "track": "vocals",
+            "mood": "love",
+            "vision": "sunset_walk"
+          },
+          {
+            "text": "始终觉得拥抱比亲吻更亲密",
+            "track": "guitar",
+            "mood": "shy",
+            "vision": "hug"
+          },
+          {
+            "text": "终于和 crush 在一起！！原来他也喜欢我",
+            "track": "bass",
+            "mood": "love",
+            "vision": "together"
+          }
+        ]
+      },
+      {
+        "name": "放手",
+        "from": 33.5,
+        "to": 46.0,
+        "cards": [
+          {
+            "text": "其实我比你更早发现我们不合适，只是舍不得分开",
+            "track": "vocals",
+            "solo": true,
+            "mood": "sad",
+            "vision": "farewell"
+          },
+          {
+            "text": "这首歌给我一种，隔着一玻璃罐蜂蜜看喜欢的人的后脑勺的感觉",
+            "track": "guitar",
+            "solo": true,
+            "mood": "nostalgic",
+            "vision": "honey_jar"
+          },
+          {
+            "text": "喜欢你以后，我已经好久没抬头看过天了",
+            "track": "bass",
+            "solo": true,
+            "mood": "lonely",
+            "vision": "no_sky"
+          }
+        ]
+      },
+      {
+        "name": "写给父亲",
+        "from": 46.5,
+        "to": 59.5,
+        "cards": [
+          {
+            "text": "原来这是写给父亲的歌……你是我的父亲，无奈我没法做到完全不爱你，i love you so",
+            "track": "vocals",
+            "mood": "sad",
+            "vision": "father_back"
+          },
+          {
+            "text": "爸，我讨厌你的教育方式和封建思想，但是我也心疼你在外面累死累活的模样",
+            "track": "bass",
+            "mood": "sad",
+            "vision": "dad_rain"
+          },
+          {
+            "text": "我今年打暑假工，终于有钱给我爸换手机了，兄弟们我帅不帅",
+            "track": "guitar",
+            "mood": "happy",
+            "vision": "gift_phone"
+          }
+        ]
+      },
+      {
+        "name": "往前走",
+        "from": 60.0,
+        "to": 67.5,
+        "cards": [
+          {
+            "text": "距离高考不到 24 天，压力好大",
+            "track": "guitar",
+            "mood": "hope",
+            "vision": "exam_countdown"
+          },
+          {
+            "text": "我的抑郁症快好了",
+            "track": "vocals",
+            "mood": "happy",
+            "vision": "sunrise"
+          }
+        ]
+      }
+    ],
+    "finale": {
+      "from": 68.0,
+      "text": "爱一个人，也别忘了爱自己",
+      "sub": "But I love you so"
+    }
+  },
+  "lrc": "",
+  "duration": 84
+}

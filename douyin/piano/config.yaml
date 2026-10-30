@@ -1,0 +1,69 @@
+# 钢琴下落音符视频配置（路径相对 douyin/ 目录）
+video:
+  width: 1920
+  height: 1080
+  fps: 60
+  crf: 18                    # 越小画质越高、文件越大
+  preset: fast
+
+layout:
+  keyboard_bottom: 0.91      # 琴键底边位置(占画面高度比例)；竖屏建议 0.82，避开抖音底部文案区
+  keyboard_height: 0.21      # 琴键最大高度(占画面高度比例)，同时受真实琴键比例限制
+  key_range: full            # full = 88 键; auto = 按曲子音域裁剪(竖屏推荐)
+
+notes:
+  lookahead: 2.6             # 音符从画面顶部落到琴键所需秒数(越小越快)
+  color_by_hand: false       # true 时左右手不同颜色
+  right: {core: "#e6e0ff", glow: "#7b68ff"}
+  left:  {core: "#d8f0ff", glow: "#3f9cff"}
+  glow_strength: 0.9
+
+effects:
+  note_fade: true            # 音符不进入标题区，在标题下方渐渐出现(保证标题不被遮挡)
+  scrim: 0.6                 # 标题/水印后面的黑色渐隐蒙版强度(0-1)，衬托亮色背景图；0 = 关闭
+  sheen: true                # 按下琴键时一道光从上往下扫过
+  sparks: 6                  # 每次击键溅起的光点数量，0 = 关闭
+  line_flow: true            # 琴键顶部亮线上的流光
+
+intro:                       # 爆款开头：头像唱片 × 曲子封面唱片，配高潮片段
+  enabled: false             # 总开关：false 时网页不显示「V 开头」，渲染也不加开头（代码保留）
+  duration: 4.0
+  avatar: assets/intro/avatar.jpg        # 左侧(竖屏为上方)唱片：账号头像，固定不变
+  left_name: "谬紫克！"
+  sfx: true                  # 入场「嗖 + 咚」转场音效
+  effects: {beat: true, stardust: true, glitch: true, light_leak: true}
+
+timing:
+  lead_in: 3.0               # 第一个音符前的留白(秒)
+  tail: 3.0
+
+background:
+  top: "#161616"
+  bottom: "#050505"
+  dim: 0.45                  # 自定义背景图/视频的亮度(0-1)，压暗让音符更突出
+
+text:
+  font: C:/Windows/Fonts/pala.ttf      # 英文标题(小型大写字母风格)
+  cjk_font: C:/Windows/Fonts/msyh.ttc  # 中文标题
+
+audio:
+  fluidsynth: tools/fluidsynth/fluidsynth-v2.6.1-win10-x64-cpp11/bin/fluidsynth.exe
+  soundfont: tools/soundfonts/GeneralUser-GS.sf2
+  gain: 0.6
+  sample_rate: 44100
+  loudness: -14              # 目标响度 LUFS(短视频平台常用 -14)
+
+jianying:                    # --jianying 模式（生成剪映草稿）
+  draft_dir: null            # 剪映草稿目录；null = %LOCALAPPDATA%/JianyingPro/User Data/Projects/com.lveditor.draft
+  background: null           # 默认背景图片/视频；null = 深色渐变。歌曲 yaml 里的 background 优先
+  bgm: null                  # 默认背景音(雨声、白噪音等)；歌曲 yaml 里的 bgm 优先
+  bgm_volume: 0.3            # 0-1，相对钢琴声
+  watermark: ""              # 水印/账号名，例如 "@你的账号"
+  title_font: Cinzel_Regular            # 剪映内置字体名（英文，小写字母显示为小型大写）
+  cjk_font: SourceHanSerifCN_Regular    # 中文用思源宋体
+  text_size: {title: 10, subtitle: 6, watermark: 5}
+
+paths:
+  output: output             # 中间素材(剪映草稿引用的文件也在这里，勿删)
+  deliver: 待上传            # 成片：每条视频一个文件夹(video.mp4 / cover.jpg / publish.md)
+  tmp: ../.tmp/piano

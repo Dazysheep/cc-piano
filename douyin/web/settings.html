@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>设置</title>
+<script src="/ui/settings.js"></script>
+<script src="/ui/filmsound.js"></script>
+<script src="/ui/tabs.js"></script>
+<link rel="stylesheet" href="/ui/ui.css">
+<style>
+.wrap { width: min(760px, 100% - 48px); margin: 0 auto; padding-bottom: 80px; }
+.looks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; padding: 18px 16px 14px; }
+.look { display: grid; justify-items: center; gap: 8px; cursor: pointer; position: relative; }
+.look input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.look .mini { width: 100%; max-width: 150px; aspect-ratio: 16 / 10; border-radius: 12px; overflow: hidden; display: grid; grid-template-columns: 26% 1fr;
+  box-shadow: 0 0 0 .5px var(--sep), 0 8px 20px -12px rgba(0, 0, 0, .6); transition: box-shadow var(--t); }
+.look .mini i { display: block; }
+.look .mini .side { padding: 8px 5px; display: grid; gap: 4px; align-content: start; }
+.look .mini .side b { height: 5px; border-radius: 3px; }
+.look .mini .main { padding: 8px; display: grid; gap: 5px; align-content: start; }
+.look .mini .main b { height: 16px; border-radius: 5px; }
+.look .mini .main b:first-child { height: 7px; width: 55%; }
+.mini.dark { background: #000; } .mini.dark .side { background: #1c1c1e; } .mini.dark b { background: #2c2c2e; }
+.mini.light { background: #f2f2f7; } .mini.light .side { background: #fff; } .mini.light b { background: #e5e5ea; }
+.mini.auto { background: linear-gradient(135deg, #f2f2f7 50%, #000 50%); } .mini.auto .side { background: linear-gradient(135deg, #fff 50%, #1c1c1e 50%); }
+.mini.auto b { background: #8e8e93; opacity: .45; }
+.look .mini .side b.a, .look .mini .main b.a { background: var(--accent); opacity: 1; }
+.look span { font-size: calc(var(--fs) * .92); }
+.look .radio { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--label-3); display: grid; place-items: center; }
+.look input:checked ~ .radio { border-color: var(--accent); background: var(--accent); }
+.look input:checked ~ .radio::after { content: ""; width: 9px; height: 5px; border: 2px solid #fff; border-top: 0; border-right: 0; transform: translateY(-1px) rotate(-45deg); }
+.look input:checked ~ .mini { box-shadow: 0 0 0 2.5px var(--accent); }
+.look input:focus-visible ~ .mini { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* 强调色：一排色块，鼠标所在的那块放大、两侧依次放大，上方显示色值；点击选用 */
+.container-items { display: flex; transform-style: preserve-3d; transform: perspective(1000px); padding: 18px 12px 6px 4px; }
+.item-color { position: relative; flex-shrink: 0; width: 32px; height: 40px; border: none; outline: none; background: none; padding: 0;
+  transition: 500ms cubic-bezier(0.175, 0.885, 0.32, 1.1); cursor: pointer; }
+.item-color::after { position: absolute; content: ""; inset: 0; width: 40px; height: 40px; background-color: var(--color); border-radius: 6px;
+  transform: scale(1.2); pointer-events: none; transition: 500ms cubic-bezier(0.175, 0.885, 0.32, 1.1); }
+.item-color::before { position: absolute; content: attr(data-tip); left: 65%; bottom: 52px; font-size: 8px; line-height: 12px; white-space: nowrap;
+  transform: translateX(-50%); padding: 2px 0.25rem; background-color: #ffffff; color: #111; border-radius: 6px; pointer-events: none;
+  opacity: 0; visibility: hidden; transition: 500ms cubic-bezier(0.175, 0.885, 0.32, 1.1); z-index: 2; }
+.item-color:hover { transform: scale(1.5); z-index: 99999; }
+.item-color:hover::before { opacity: 1; visibility: visible; }
+.item-color:active::after { transform: scale(1.1); }
+.item-color.on::before { content: "✓ 已选用 " attr(data-tip); }
+.item-color:hover + * { transform: scale(1.3); z-index: 9999; }
+.item-color:hover + * + * { transform: scale(1.15); z-index: 999; }
+.item-color:has(+ *:hover) { transform: scale(1.3); z-index: 9999; }
+.item-color:has(+ * + *:hover) { transform: scale(1.15); z-index: 999; }
+.item-color .check { position: absolute; z-index: 1; left: 4px; top: 0; width: 40px; height: 40px; display: grid; place-items: center; pointer-events: none; }
+.item-color .check svg { width: 18px; height: 18px; }
+.item-color .check[hidden] { display: none; }
+.item-color:focus-visible::after { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--label); }
+.row .ctl { flex: none; display: flex; align-items: center; gap: 10px; }
+.row .ctl .range { width: 200px; }
+.row.sub { padding-left: 44px; }
+.row.off { opacity: .4; pointer-events: none; }
+.scope { padding: 14px 16px; font-size: calc(var(--fs) * .9); line-height: 1.7; color: var(--label-2); }
+.scope b { color: var(--label); font-weight: 600; }
+.st-path { font-family: var(--mono) !important; word-break: break-all; user-select: all; color: var(--label) !important; opacity: .8; }
+#storage .ctl { gap: 8px; }
+.reset { width: 100%; justify-content: center; color: var(--danger); background: var(--card); min-height: 48px; border-radius: var(--r-md); }
+@media (max-width: 640px) { .row .ctl .range { width: 130px; } }
+/* 调整左侧功能栏：小弹窗（不改设置页本身的布局） */
+.navmodal { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; background: rgba(0, 0, 0, .45); }
+.navmodal[hidden] { display: none; }
+.navmodal .box { width: min(420px, 92vw); max-height: 82vh; display: flex; flex-direction: column; border-radius: 18px; overflow: hidden;
+  background: var(--bg-2, var(--card)); box-shadow: 0 0 0 .5px var(--sep), 0 24px 60px -20px rgba(0, 0, 0, .7); }
+.navmodal .head { padding: 16px 18px 6px; } .navmodal .head b { font-size: calc(var(--fs) * 1.05); }
+.navmodal .head small { display: block; margin-top: 4px; color: var(--label-2); font-size: calc(var(--fs) * .8); }
+.navmodal .list { overflow: auto; padding: 4px 10px 8px; }
+.navmodal .gt { margin: 12px 8px 4px; font-size: calc(var(--fs) * .74); font-weight: 600; color: var(--label-3); letter-spacing: .06em; }
+.navmodal .it { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 10px; }
+.navmodal .it:hover { background: var(--fill-2); }
+.navmodal .it .ic { width: 26px; height: 26px; display: grid; place-items: center; color: var(--accent); }
+.navmodal .it .ic svg { width: 19px; height: 19px; }
+.navmodal .it span { flex: 1; } .navmodal .it small { color: var(--label-3); font-size: calc(var(--fs) * .74); }
+.navmodal .foot { display: flex; gap: 8px; justify-content: space-between; padding: 10px 14px 14px; border-top: .5px solid var(--sep); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="headline"><div><h1>设置</h1><div class="sub">外观、作品集浏览、胶片音效和视频展示，改动立即生效并自动保存</div></div></header>
+
+  <div class="group-title">外观</div>
+  <section class="group material">
+    <div class="looks">
+      <label class="look"><input type="radio" name="appearance" value="dark">
+        <div class="mini dark"><div class="side"><b class="a"></b><b></b><b></b></div><div class="main"><b></b><b></b><b class="a"></b></div></div>
+        <span>深色</span><span class="radio"></span></label>
+      <label class="look"><input type="radio" name="appearance" value="light">
+        <div class="mini light"><div class="side"><b class="a"></b><b></b><b></b></div><div class="main"><b></b><b></b><b class="a"></b></div></div>
+        <span>浅色</span><span class="radio"></span></label>
+      <label class="look"><input type="radio" name="appearance" value="auto">
+        <div class="mini auto"><div class="side"><b class="a"></b><b></b><b></b></div><div class="main"><b></b><b></b><b class="a"></b></div></div>
+        <span>自动</span><span class="radio"></span></label>
+    </div>
+    <div class="row"><div class="text"><b>强调色</b><small>按钮、开关、侧边栏图标、选中状态的颜色</small></div>
+      <div class="ctl container-items" id="accents" role="radiogroup" aria-label="强调色"></div></div>
+    <div class="row"><div class="text"><b>背景</b><small>页面底色的光影</small></div>
+      <div class="ctl segmented"><label><input type="radio" name="background" value="aurora"><span>柔光渐变</span></label>
+        <label><input type="radio" name="background" value="plain"><span>纯色</span></label></div></div>
+    <div class="row"><div class="text"><b>毛玻璃材质</b><small>侧边栏、卡片半透明虚化；电脑较慢时可关闭</small></div>
+      <label class="switch"><input type="checkbox" data-key="glass"><i></i></label></div>
+    <div class="row"><div class="text"><b>流畅模式</b><small>毛玻璃换成半透明实底、开端页动画简化、不在后台预加载其他页面，换更高的帧率；觉得卡时打开</small></div>
+      <label class="switch"><input type="checkbox" data-key="perfMode"><i></i></label></div>
+    <div class="row"><div class="text"><b>动画</b><small>页面过渡、作品切换的动画</small></div>
+      <div class="ctl segmented"><label><input type="radio" name="motion" value="full"><span>完整</span></label>
+        <label><input type="radio" name="motion" value="reduced"><span>减弱</span></label>
+        <label><input type="radio" name="motion" value="off"><span>关闭</span></label></div></div>
+    <div class="row"><div class="text"><b>启动时显示开端页</b><small>黑白的钢琴与音轨动画，从这里进入工作台；关闭后直接进入</small></div>
+      <label class="switch"><input type="checkbox" data-key="landing"><i></i></label></div>
+    <div class="row sub" data-dep="landing"><div class="text"><b>开端页文字</b><small>开端页上的标题、卡片和按钮用哪种语言</small></div>
+      <div class="ctl segmented"><label><input type="radio" name="landingLang" value="en"><span>English</span></label>
+        <label><input type="radio" name="landingLang" value="zh"><span>中文</span></label></div></div>
+    <div class="row sub" data-dep="landing"><div class="text"><b>开端页钢琴声</b><small>音符落到琴键上时发声，也可以点击琴键弹奏；音量跟随下面「胶片音效」的音量</small></div>
+      <label class="switch"><input type="checkbox" data-key="landingSound"><i></i></label></div>
+    <div class="row"><div class="text"><b>文字大小</b></div>
+      <div class="ctl segmented"><label><input type="radio" name="textSize" value="standard"><span>标准</span></label>
+        <label><input type="radio" name="textSize" value="large"><span>较大</span></label></div></div>
+  </section>
+
+  <div class="group-title">侧边栏</div>
+  <section class="group material">
+    <div class="row"><div class="text"><b>显示功能名称</b><small>关闭后侧边栏只显示图标，鼠标停留时显示名称</small></div>
+      <label class="switch"><input type="checkbox" data-key="navLabels"><i></i></label></div>
+    <div class="row" data-dep="navLabels"><div class="text"><b>显示分组标题</b><small>「创作」「分发」</small></div>
+      <label class="switch"><input type="checkbox" data-key="navGroups"><i></i></label></div>
+    <div class="row" data-dep="navLabels"><div class="text"><b>显示快捷键提示</b><small>鼠标停在按钮上时显示 Ctrl 1~9、Ctrl 0</small></div>
+      <label class="switch"><input type="checkbox" data-key="navKeys"><i></i></label></div>
+    <div class="row"><div class="text"><b>调整左侧功能栏</b><small id="navSummary">选择侧边栏里显示哪些功能</small></div>
+      <div class="ctl"><button class="b tinted" id="navEdit" type="button">调整…</button></div></div>
+  </section>
+  <div class="group-foot">图标是透明的线条，颜色跟随上面的「强调色」。</div>
+
+  <div class="group-title">作品集</div>
+  <section class="group material">
+    <div class="row"><div class="text"><b>浏览方式</b><small>作品集页面右上角也可以随时切换</small></div>
+      <div class="ctl segmented"><label><input type="radio" name="worksView" value="arc"><span>半弧形胶片</span></label>
+        <label><input type="radio" name="worksView" value="grid"><span>网格</span></label></div></div>
+    <div class="row" data-dep="arc"><div class="text"><b>弧度</b><small>胶片弯曲的程度</small></div>
+      <div class="ctl"><input class="range" type="range" data-key="arcCurve" min="0" max="1" step="0.05"><span class="val" data-out="arcCurve"></span></div></div>
+    <div class="row" data-dep="arc"><div class="text"><b>滚动灵敏度</b><small>滚轮转一格划过多少张</small></div>
+      <div class="ctl"><input class="range" type="range" data-key="wheelSensitivity" min="0.4" max="2" step="0.1"><span class="val" data-out="wheelSensitivity"></span></div></div>
+    <div class="row" data-dep="arc"><div class="text"><b>切换动画</b></div>
+      <div class="ctl segmented"><label><input type="radio" name="switchAnim" value="smooth"><span>平滑</span></label>
+        <label><input type="radio" name="switchAnim" value="spring"><span>回弹</span></label></div></div>
+    <div class="row" data-dep="arc"><div class="text"><b>动画速度</b></div>
+      <div class="ctl"><input class="range" type="range" data-key="animSpeed" min="0.5" max="2" step="0.1"><span class="val" data-out="animSpeed"></span></div></div>
+  </section>
+
+  <div class="group-title">胶片音效</div>
+  <section class="group material">
+    <div class="row"><div class="text"><b>胶片音效</b><small>在作品集里滚动胶片时的机械声，不影响视频本身的声音</small></div>
+      <label class="switch"><input type="checkbox" data-key="sound"><i></i></label></div>
+    <div class="row" data-dep="sound"><div class="text"><b>音量</b></div>
+      <div class="ctl"><input class="range" type="range" data-key="volume" min="0" max="1" step="0.05"><span class="val" data-out="volume"></span></div></div>
+    <div class="row sub" data-dep="sound"><div class="text"><b>齿孔咔嗒</b><small>每经过一张作品轻响一声，滚得快节奏也快</small></div>
+      <label class="switch"><input type="checkbox" data-key="soundTick"><i></i></label></div>
+    <div class="row sub" data-dep="sound"><div class="text"><b>滚动摩擦</b><small>只在滚动时出现，停下后自然淡出</small></div>
+      <label class="switch"><input type="checkbox" data-key="soundFriction"><i></i></label></div>
+    <div class="row sub" data-dep="sound"><div class="text"><b>定位反馈</b><small>停在一张作品上时的轻柔闷响</small></div>
+      <label class="switch"><input type="checkbox" data-key="soundSettle"><i></i></label></div>
+    <div class="row" data-dep="sound"><div class="text"><b>试听</b></div><button class="b tinted" id="preview" type="button">播放一段</button></div>
+  </section>
+
+  <div class="group-title">视频展示</div>
+  <section class="group material">
+    <div class="row"><div class="text"><b>选中后自动播放</b><small>作品集里停在一张作品上时自动播放它</small></div>
+      <label class="switch"><input type="checkbox" data-key="autoplay"><i></i></label></div>
+    <div class="row sub" data-dep="autoplay"><div class="text"><b>自动播放时静音</b><small>点播放按钮或全屏时会带声音播放</small></div>
+      <label class="switch"><input type="checkbox" data-key="autoplayMuted"><i></i></label></div>
+    <div class="row" data-dep="autoplay"><div class="text"><b>加载延迟</b><small>停稳多久后开始加载视频；快速翻找时不会频繁加载</small></div>
+      <div class="ctl"><input class="range" type="range" data-key="loadDelay" min="0" max="1500" step="50"><span class="val" data-out="loadDelay"></span></div></div>
+    <div class="row"><div class="text"><b>循环播放</b></div><label class="switch"><input type="checkbox" data-key="loop"><i></i></label></div>
+    <div class="row"><div class="text"><b>背景跟随作品</b><small>页面背景换成当前作品封面的虚化</small></div>
+      <label class="switch"><input type="checkbox" data-key="bgFollow"><i></i></label></div>
+    <div class="row" data-dep="bgFollow"><div class="text"><b>背景模糊</b></div>
+      <div class="ctl"><input class="range" type="range" data-key="bgBlur" min="20" max="120" step="5"><span class="val" data-out="bgBlur"></span></div></div>
+  </section>
+
+  <div class="group-title">3D 建模</div>
+  <section class="group material" id="m3d">
+    <div class="row"><div class="text"><b>启用 3D 建模（Blender）</b><small>根据图片生成立体模型，放进 3D 建模库；打开后左侧功能栏出现「3D 建模」</small></div>
+      <label class="switch"><input type="checkbox" id="m3dOn"><i></i></label></div>
+    <div class="row" id="m3dDirRow"><div class="text"><b>3D 建模库文件夹</b><small class="st-path" id="m3dDir">读取中…</small></div>
+      <div class="ctl"><button class="b tinted" id="m3dPick" type="button">选择文件夹…</button><button class="b gray" id="m3dDefault" type="button">默认</button></div></div>
+  </section>
+  <div class="group-foot" id="m3dFoot"></div>
+
+  <div class="group-title">存储</div>
+  <section class="group material" id="storage">
+    <div class="row"><div class="text"><b>视频保存位置</b><small>钢琴、音轨、拨片开头生成的成片都存在这里，文件包和作品集也从这里读</small></div>
+      <div class="ctl segmented"><label><input type="radio" name="storageMode" value="project" data-storage><span>待上传</span></label>
+        <label><input type="radio" name="storageMode" value="browser" data-storage><span>跟随浏览器</span></label>
+        <label><input type="radio" name="storageMode" value="custom" data-storage><span>自定义</span></label></div></div>
+    <div class="row"><div class="text"><b>当前位置</b><small class="st-path" id="stPath">读取中…</small></div>
+      <div class="ctl"><button class="b tinted" id="stPick" type="button">选择文件夹…</button><button class="b gray" id="stOpen" type="button">打开</button></div></div>
+    <div class="row" id="stCustomRow" hidden><div class="text" style="flex:1"><input class="input" id="stInput" type="text" placeholder="也可以直接粘贴文件夹路径，例如 D:\视频\琴房" spellcheck="false"></div>
+      <button class="b filled" id="stApply" type="button">应用</button></div>
+  </section>
+  <div class="group-foot" id="stFoot"></div>
+
+  <div class="group-title">适用范围</div>
+  <section class="group material">
+    <div class="scope">这些设置作用于 <b>开端页</b>、<b>左侧导航</b>、<b>发布台</b>、<b>作品集</b> 和本页。
+      <b>琴房</b>（钢琴设置）、<b>音轨剪辑</b>、<b>拨片开头</b> 保持各自原有的界面和参数，不受这里影响。</div>
+  </section>
+  <div style="height: 22px"></div>
+  <button class="b reset" id="reset" type="button">恢复默认设置</button>
+  <p class="group-foot" style="text-align:center;margin-top:18px" id="version">cc-piano</p>
+</div>
+<div class="toast" id="toast" role="status"></div>
+<div class="navmodal" id="navModal" hidden><div class="box" role="dialog" aria-label="调整左侧功能栏">
+  <div class="head"><b>调整左侧功能栏</b><small>关掉的功能不在侧边栏显示（页面和数据都还在，随时可以再打开）。「设置」始终显示。</small></div>
+  <div class="list" id="navItems"></div>
+  <div class="foot"><button class="b gray" id="navAll" type="button">全部显示</button><button class="b filled" id="navDone" type="button">完成</button></div>
+</div></div>
+
+<script>
+const ST = window.StudioSettings;
+const $ = (s) => document.querySelector(s);
+const FMT = { arcCurve: (v) => `${Math.round(v * 100)}%`, wheelSensitivity: (v) => `${(+v).toFixed(1)}×`, animSpeed: (v) => `${(+v).toFixed(1)}×`,
+  volume: (v) => `${Math.round(v * 100)}%`, loadDelay: (v) => `${v} ms`, bgBlur: (v) => `${v} px` };
+
+const acc = $("#accents");
+for (const [k, [color, on, name]] of Object.entries(ST.ACCENTS)) {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "item-color"; b.dataset.key = k; b.dataset.tip = `${name} ${color}`;
+  b.style.setProperty("--color", color);
+  b.setAttribute("role", "radio"); b.setAttribute("aria-label", name);
+  b.innerHTML = `<span class="check" style="color:${on}" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span>`;
+  b.addEventListener("click", () => ST.set({ accent: k }));
+  acc.appendChild(b);
+}
+function paint(s) {
+  document.querySelectorAll("input[type=radio]:not([data-storage])").forEach((r) => { r.checked = s[r.name] === r.value; });
+  document.querySelectorAll("input[data-key]").forEach((el) => {
+    const k = el.dataset.key;
+    if (el.type === "checkbox") el.checked = !!s[k];
+    else {
+      el.value = s[k];
+      el.style.setProperty("--p", `${((s[k] - el.min) / (el.max - el.min)) * 100}%`);
+      const out = document.querySelector(`[data-out="${k}"]`); if (out) out.textContent = FMT[k] ? FMT[k](s[k]) : s[k];
+    }
+  });
+  document.querySelectorAll("[data-dep]").forEach((row) => {
+    const d = row.dataset.dep;
+    row.classList.toggle("off", d === "arc" ? s.worksView !== "arc" : !s[d]);   // 依赖的开关关闭时变灰
+  });
+  const curAcc = ST.ACCENTS[s.accent] ? s.accent : ST.DEFAULTS.accent;
+  acc.querySelectorAll(".item-color").forEach((b) => {
+    const on = b.dataset.key === curAcc;
+    b.classList.toggle("on", on); b.setAttribute("aria-checked", on); b.querySelector(".check").hidden = !on;
+  });
+}
+document.addEventListener("change", (e) => {
+  const el = e.target;
+  if (el.type === "radio" && !el.hasAttribute("data-storage")) ST.set({ [el.name]: el.value });
+  else if (el.dataset.key && el.type === "checkbox") ST.set({ [el.dataset.key]: el.checked });
+});
+document.addEventListener("input", (e) => {
+  const el = e.target;
+  if (el.dataset.key && el.type === "range") ST.set({ [el.dataset.key]: +el.value });
+});
+$("#preview").addEventListener("click", () => window.FilmSound.preview());
+$("#reset").addEventListener("click", () => {
+  ST.reset();
+  const t = $("#toast"); t.textContent = "已恢复默认设置"; t.className = "toast on"; setTimeout(() => t.classList.remove("on"), 2200);
+});
+ST.on(paint);
+paint(ST.get());
+// ---------- 存储：成片保存位置（存在服务端 app_settings.json，渲染脚本也读它） ----------
+let stInfo = null;
+const stPost = async (url, body) => {
+  const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const d = await r.json(); if (!r.ok || d.error) throw new Error(d.error || r.statusText); return d;
+};
+function stToast(msg, err) { const t = $("#toast"); t.textContent = msg; t.className = "toast on" + (err ? " err" : ""); setTimeout(() => t.classList.remove("on"), 2800); }
+function renderStorage(s) {
+  stInfo = s;
+  document.querySelectorAll("input[name=storageMode]").forEach((r) => { r.checked = r.value === s.mode; });
+  $("#stPath").textContent = s.resolved;
+  $("#stCustomRow").hidden = s.mode !== "custom";
+  if (document.activeElement !== $("#stInput")) $("#stInput").value = s.mode === "custom" ? s.path : "";
+  $("#stFoot").textContent = `待上传（默认）= ${s.project}。跟随浏览器 = ${s.browser.source}里的「琴房Studio」：${s.browser.dir}。`
+    + "换过保存位置后，以前存在这几个位置的作品仍会显示在作品集和发布台里。"
+    + "生成过程中的中间文件仍放在项目的 output 文件夹（剪映草稿会用到）。";
+}
+async function saveStorage(mode, path) {
+  try { renderStorage(await stPost("/api/storage", { mode, path })); stToast(`视频保存位置：${stInfo.resolved}`); }
+  catch (e) { stToast(e.message, true); if (stInfo) renderStorage(stInfo); }
+}
+document.querySelectorAll("input[name=storageMode]").forEach((r) => r.addEventListener("change", () => {
+  if (r.value === "project" || r.value === "browser") saveStorage(r.value, "");
+  else if (stInfo && stInfo.path) saveStorage("custom", stInfo.path);
+  else { $("#stCustomRow").hidden = false; $("#stInput").focus(); }   // 还没选过文件夹：先选
+}));
+$("#stPick").addEventListener("click", async () => {
+  $("#stPick").disabled = true;
+  try {
+    const r = await stPost("/api/storage/pick", { start: stInfo ? stInfo.resolved : "" });
+    if (r.path) await saveStorage("custom", r.path);
+  } catch (e) { stToast(e.message, true); }
+  $("#stPick").disabled = false;
+});
+$("#stApply").addEventListener("click", () => saveStorage("custom", $("#stInput").value));
+$("#stInput").addEventListener("keydown", (e) => { if (e.key === "Enter") saveStorage("custom", $("#stInput").value); });
+$("#stOpen").addEventListener("click", () => stPost("/api/open-deliver", {}).catch((e) => stToast(e.message, true)));
+fetch("/api/storage").then((r) => r.json()).then(renderStorage).catch(() => { $("#stPath").textContent = "读取失败（琴房服务没开？）"; });
+// ---------- 调整左侧功能栏：功能清单来自 /ui/tabs.js（以后新加的功能自动出现在这里） ----------
+function navRender(s) {
+  const hidden = s.navHidden || [];
+  const groups = [...CC_GROUPS, "系统"];
+  $("#navItems").innerHTML = groups.map((g) => {
+    const items = CC_TABS.filter((t) => t.group === g);
+    return items.length ? `<div class="gt">${g}</div>` + items.map((t) => {
+      const need = t.requires && !s[t.requires];
+      const sub = t.fixed ? "始终显示" : need ? "需先在下面「3D 建模」里启用" : "";
+      return `<label class="it"><i class="ic">${t.icon}</i><span>${t.title}${sub ? `<br><small>${sub}</small>` : ""}</span>
+        <span class="switch" style="flex:none"><input type="checkbox" data-nav="${t.key}" ${!hidden.includes(t.key) || t.fixed ? "checked" : ""} ${t.fixed || need ? "disabled" : ""}><i></i></span></label>`;
+    }).join("") : "";
+  }).join("");
+  const shown = CC_TABS.filter((t) => CC_TAB_VISIBLE(t, s)).length;
+  const off = hidden.filter((k) => CC_TABS.some((t) => t.key === k)).length;
+  $("#navSummary").textContent = `现在显示 ${shown} 个功能` + (off ? `，隐藏了 ${off} 个` : "") + "；可以自己增减";
+}
+$("#navEdit").addEventListener("click", () => { navRender(ST.get()); $("#navModal").hidden = false; });
+$("#navDone").addEventListener("click", () => { $("#navModal").hidden = true; });
+$("#navModal").addEventListener("click", (e) => { if (e.target.id === "navModal") $("#navModal").hidden = true; });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("#navModal").hidden = true; });
+$("#navAll").addEventListener("click", () => ST.set({ navHidden: [] }));
+$("#navItems").addEventListener("change", (e) => {
+  const k = e.target.dataset.nav;
+  if (!k) return;
+  e.stopPropagation();
+  const hidden = new Set(ST.get().navHidden || []);
+  if (e.target.checked) hidden.delete(k); else hidden.add(k);
+  ST.set({ navHidden: [...hidden] });
+});
+ST.on(navRender);
+navRender(ST.get());
+// ---------- 3D 建模：是否启用、建模库文件夹（存在服务端 model3d.json；启用状态也同步进设置，侧边栏据此显示） ----------
+function renderM3d(c) {
+  $("#m3dOn").checked = !!c.enabled;
+  $("#m3dDir").textContent = c.dir + (c.custom ? "" : "（默认）");
+  $("#m3dDirRow").classList.toggle("off", !c.enabled);
+  $("#m3dFoot").textContent = c.blender ? `Blender ${c.blender}：生成时在后台运行，做完就退出，不会一直占着显卡和内存。`
+    : "还没有找到 Blender（douyin 文件夹里的 tools\\blender）。";
+  if (!!ST.get().model3d !== !!c.enabled) ST.set({ model3d: !!c.enabled });
+}
+async function m3dSave(body, msg) {
+  try { const c = await stPost("/api/model3d/config", body); renderM3d(c); if (msg) stToast(msg(c)); }
+  catch (e) { stToast(e.message, true); }
+}
+$("#m3dOn").addEventListener("change", (e) => {
+  e.stopPropagation();
+  m3dSave({ enabled: e.target.checked }, (c) => c.enabled ? "已启用 3D 建模，左侧功能栏出现「3D 建模」" : "已关闭 3D 建模");
+});
+$("#m3dPick").addEventListener("click", async () => {
+  try {
+    const r = await stPost("/api/storage/pick", { start: $("#m3dDir").textContent.replace("（默认）", "") });
+    if (r.path) m3dSave({ dir: r.path }, (c) => `3D 建模库：${c.dir}`);
+  } catch (e) { stToast(e.message, true); }
+});
+$("#m3dDefault").addEventListener("click", () => m3dSave({ dir: "" }, (c) => `3D 建模库：${c.dir}`));
+fetch("/api/model3d/config").then((r) => r.json()).then(renderM3d).catch(() => { $("#m3dDir").textContent = "读取失败（琴房服务没开？）"; });
+fetch("/api/version").then((r) => r.json()).then((d) => { $("#version").textContent = `cc-piano　版本 ${d.version}`; }).catch(() => {});
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "ui_state": {
+    "ts": 1793269649939.0,
+    "keys": {
+      "studio.ui.v1": "{\"appearance\":\"dark\",\"accent\":\"violet\",\"background\":\"aurora\",\"glass\":true,\"motion\":\"full\",\"textSize\":\"standard\",\"landing\":true,\"landingLang\":\"en\",\"landingSound\":true,\"model3d\":true,\"perfMode\":true,\"navLabels\":false,\"navGroups\":true,\"navKeys\":false,\"navHidden\":[\"studio\",\"tracks\"],\"worksView\":\"arc\",\"arcCurve\":0.55,\"wheelSensitivity\":1,\"switchAnim\":\"smooth\",\"animSpeed\":1,\"sound\":true,\"volume\":0.5,\"soundTick\":true,\"soundFriction\":true,\"soundSettle\":true,\"autoplay\":true,\"autoplayMuted\":true,\"loadDelay\":700,\"loop\":true,\"bgFollow\":true,\"bgBlur\":60}",
+      "qinfang.tour": "[\"douyin\"]",
+      "studio.tab": "edit",
+      "flick.settings": "{\"title\":\"Приятные Сны\",\"artist\":\"Corn Wave\",\"seconds\":\"4\",\"orient\":\"h\",\"draft\":true}",
+      "tracks.song": "sacred_play.json"
+    }
+  },
+  "storage": {
+    "mode": "project",
+    "path": ""
+  }
+}

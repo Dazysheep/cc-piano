@@ -1,0 +1,32 @@
+{
+ "note": "在 v5 上：开头小剧场「加班的夜」（夜空半月 + 评论 → 高楼办公室读评论 → 老板来电乱码 → 女朋友来电红烧肉 → 拨片开头从右边拉进来）；结尾小剧场「回家」（画面中间小窗：回家吃饭、网易云放这首歌、鞠躬、镜头推近消失）；只显示 4 条音轨给小人腾地方；约 80 秒。用户 2026-10-25 设计",
+ "theme": "sunset",
+ "backdrop": true,
+ "grain": 0,
+ "fireworks": true,
+ "lyrics": true,
+ "loop": false,
+ "intro": 19.0,
+ "intro_from_library": true,
+ "duration": 84,
+ "cold_open": false,
+ "snap_beats": true,
+ "fade_in_beats": 1,
+ "fade_out_beats": 2,
+ "pulse": 0.015,
+ "intro_text": true,
+ "cast": "duo",
+ "opening": {
+  "name": "office"
+ },
+ "ending": {
+  "name": "home"
+ },
+ "ending_seconds": 10,
+ "tracks_keep": [
+  "mix",
+  "vocals",
+  "guitar",
+  "bass"
+ ]
+}

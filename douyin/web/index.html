@@ -1,0 +1,1366 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>琴房</title>
+<script>
+  // 嵌在软件外壳里时：?view=studio 只显示琴房，?view=tour 只显示发布台
+  if (window.parent !== window) document.documentElement.classList.add("embed");
+  const VIEW = new URLSearchParams(location.search).get("view");
+  if (VIEW) document.documentElement.dataset.view = VIEW;
+</script>
+<style>
+:root {
+  --velvet: #3a0f18;
+  --velvet-deep: #22070d;
+  --ebony: #1b1310;
+  --ivory: #efe6d2;
+  --ivory-2: rgba(239, 230, 210, .64);
+  --ivory-3: rgba(239, 230, 210, .48);
+  --brass: #b8924a;
+  --brass-hi: #dcbd7f;
+  --felt: #b43a3b;
+  --rule: rgba(184, 146, 74, .28);
+  --display: "Bodoni Moda", "Didot", "Bodoni 72", "Times New Roman", serif;
+  --text: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "SimSun", serif;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+}
+* { box-sizing: border-box; }
+html { -webkit-font-smoothing: antialiased; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--ivory);
+  font: 400 16px/1.75 var(--text);
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(220, 150, 110, .16), transparent 70%),
+    linear-gradient(180deg, var(--velvet) 0%, var(--velvet-deep) 100%) fixed;
+  background-color: var(--velvet-deep);
+}
+.wrap { width: min(1240px, 100% - 32px); margin: 0 auto; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--brass-hi); outline-offset: 3px; }
+::selection { background: var(--brass); color: var(--ebony); }
+
+/* ---------- 刊头 ---------- */
+.masthead { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding: 36px 0 22px; }
+.wordmark { display: flex; align-items: baseline; gap: 18px; margin: 0; font-weight: 600; }
+.wordmark .zh { font: 600 44px/1 var(--text); letter-spacing: .12em; }
+.wordmark .la { font: italic 400 22px/1 var(--display); color: var(--brass-hi); letter-spacing: .02em; }
+.mast-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 18px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--rule); background: transparent; color: var(--ivory);
+  font-size: 15px; line-height: 1.2; white-space: nowrap;
+  transition: background .25s var(--ease), border-color .25s var(--ease), color .25s var(--ease), transform .15s var(--ease);
+}
+.btn:hover { border-color: var(--brass); background: rgba(184, 146, 74, .1); }
+.btn:active { transform: scale(.97); }
+.btn[disabled] { opacity: .4; cursor: not-allowed; }
+.btn.primary { background: linear-gradient(180deg, var(--brass-hi), var(--brass)); color: var(--ebony); border-color: transparent; font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.07); }
+.btn .count { font: 500 13px/1 var(--display); padding: 3px 7px; border-radius: 999px; background: var(--ivory); color: var(--ebony); }
+
+/* ---------- 舞台（实时预览） ---------- */
+.stage-shell { position: relative; padding: 14px; border-radius: 18px;
+  background: linear-gradient(180deg, #2a1d17, var(--ebony));
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .06) inset, 0 30px 80px -30px rgba(0, 0, 0, .8); }
+.stage { position: relative; margin: 0 auto; aspect-ratio: 16 / 9; width: 100%; border-radius: 8px; overflow: hidden; background: #050505;
+  transition: width .5s var(--ease); }
+.stage.vertical { aspect-ratio: 9 / 16; width: min(100%, calc(72vh * 9 / 16)); }
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.drop {
+  position: absolute; inset: 0; display: grid; place-content: center; text-align: center; cursor: pointer;
+  background: radial-gradient(ellipse at 50% 40%, rgba(58, 15, 24, .55), rgba(5, 5, 5, .2) 70%);
+  border: 1px dashed transparent; border-radius: 8px; transition: background .3s var(--ease), border-color .3s var(--ease);
+}
+.drop:hover, .drop.over { border-color: var(--brass); background: radial-gradient(ellipse at 50% 40%, rgba(120, 40, 50, .55), rgba(5, 5, 5, .25) 70%); }
+.drop h2 { margin: 0; font: italic 400 clamp(30px, 5vw, 60px)/1.05 var(--display); color: var(--ivory); }
+.drop h2 span { display: block; font: 600 clamp(16px, 2vw, 22px)/1.6 var(--text); font-style: normal; letter-spacing: .3em; color: var(--brass-hi); margin-top: 10px; }
+.drop p { margin: 14px 0 0; color: var(--ivory-2); font-size: 15px; }
+.stage.loaded .drop { display: none; }
+
+.transport { display: flex; align-items: center; gap: 16px; padding: 14px 6px 2px; }
+.play {
+  flex: none; width: 46px; height: 46px; border-radius: 50%; border: 0; cursor: pointer;
+  background: linear-gradient(180deg, var(--brass-hi), var(--brass)); color: var(--ebony); display: grid; place-items: center;
+  transition: transform .15s var(--ease), filter .2s; }
+.play:hover { filter: brightness(1.08); }
+.play:active { transform: scale(.94); }
+.play[disabled] { opacity: .35; cursor: not-allowed; }
+.play svg { width: 18px; height: 18px; }
+.time { font: 400 15px/1 var(--display); font-variant-numeric: tabular-nums; color: var(--ivory-2); min-width: 104px; }
+.scrub { flex: 1; -webkit-appearance: none; appearance: none; height: 22px; background: transparent; cursor: pointer; }
+.scrub::-webkit-slider-runnable-track { height: 2px; background: linear-gradient(90deg, var(--brass) var(--p, 0%), var(--ivory-3) var(--p, 0%)); }
+.scrub::-moz-range-track { height: 2px; background: var(--ivory-3); }
+.scrub::-moz-range-progress { height: 2px; background: var(--brass); }
+.scrub::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; margin-top: -6px; border-radius: 50%; background: var(--ivory); box-shadow: 0 0 0 4px rgba(184, 146, 74, .35); }
+.scrub::-moz-range-thumb { width: 14px; height: 14px; border: 0; border-radius: 50%; background: var(--ivory); }
+.piece { color: var(--ivory-2); font-size: 14px; max-width: 34%; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.piece b { color: var(--ivory); font-weight: 600; }
+
+/* ---------- 乐章（设置） ---------- */
+.desk { display: grid; grid-template-columns: 1fr 1fr 360px; gap: 0 44px; padding: 48px 0 24px; }
+.movement { padding: 0 0 34px; }
+.movement h3 { display: flex; align-items: baseline; gap: 14px; margin: 0 0 18px; padding-bottom: 10px; border-bottom: 1px solid var(--rule);
+  font: 600 20px/1.3 var(--text); letter-spacing: .08em; }
+.movement h3 i { font: italic 400 30px/1 var(--display); color: var(--brass-hi); min-width: 36px; letter-spacing: 0; }
+.field { display: block; margin: 0 0 18px; }
+.field > span { display: block; font-size: 14px; color: var(--ivory-2); margin-bottom: 4px; }
+.field input[type=text], .field textarea {
+  width: 100%; padding: 6px 0 8px; border: 0; border-bottom: 1px solid var(--ivory-3); background: transparent; outline: none;
+  transition: border-color .25s var(--ease); }
+.field textarea { resize: vertical; min-height: 64px; line-height: 1.7; }
+.field input[type=text]:focus, .field textarea:focus { border-bottom-color: var(--brass-hi); }
+.field input::placeholder, .field textarea::placeholder { color: var(--ivory-3); }
+.hint { font-size: 13px; color: var(--ivory-3); margin-top: 4px; }
+
+.seg { display: inline-flex; padding: 3px; border-radius: 999px; border: 1px solid var(--rule); }
+.seg label { position: relative; }
+.seg input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.seg span { display: block; padding: 6px 16px; border-radius: 999px; font-size: 14px; color: var(--ivory-2); transition: background .25s var(--ease), color .25s var(--ease); }
+.seg input:checked + span { background: var(--ivory); color: var(--ebony); font-weight: 600; }
+.seg input:focus-visible + span { outline: 2px solid var(--brass-hi); }
+
+.asset { display: flex; align-items: center; gap: 14px; padding: 10px; border: 1px solid var(--rule); border-radius: 12px; }
+.asset .thumb { flex: none; width: 64px; height: 40px; border-radius: 6px; background: #120c0a center / cover no-repeat; display: grid; place-items: center; color: var(--ivory-3); font: italic 18px var(--display); }
+.asset .info { flex: 1; min-width: 0; font-size: 14px; }
+.asset .info b { display: block; font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.asset .info small { color: var(--ivory-3); font-size: 13px; }
+.asset .actions { display: flex; gap: 6px; }
+.asset .btn { padding: 6px 12px; font-size: 13px; }
+.link { background: none; border: 0; padding: 0; color: var(--brass-hi); cursor: pointer; font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
+
+.slider { display: flex; align-items: center; gap: 12px; }
+.slider input { flex: 1; accent-color: var(--brass); }
+.slider output { font: 15px var(--display); font-variant-numeric: tabular-nums; min-width: 44px; text-align: right; color: var(--ivory-2); }
+
+.lib-select { width: 100%; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--rule);
+  background: var(--ebony); color: var(--ivory); font-size: 15px; }
+
+/* ---------- 开头 ---------- */
+.duo { display: flex; align-items: center; justify-content: center; gap: 18px; padding: 8px 0 4px; }
+.disc { position: relative; width: 112px; height: 112px; border-radius: 50%; flex: none; cursor: pointer;
+  background: repeating-radial-gradient(circle, #151515 0 2px, #0b0b0b 2px 4px); box-shadow: 0 10px 24px -10px rgba(0,0,0,.9); }
+.disc .label { position: absolute; inset: 22%; border-radius: 50%; background: #2a1d17 center / cover no-repeat;
+  display: grid; place-items: center; font-size: 12px; color: var(--ivory-3); text-align: center; line-height: 1.3; }
+.disc::after { content: ""; position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px; border-radius: 50%; background: #050505; }
+.disc:hover { box-shadow: 0 0 0 2px var(--brass), 0 10px 24px -10px rgba(0,0,0,.9); }
+.intro-on .disc { animation: spin 6s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.duo .x { font: 400 34px/1 var(--display); color: var(--brass-hi); }
+.duo-names { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--ivory-2); padding: 0 6px; margin-bottom: 16px; }
+.duo-names span { width: 112px; text-align: center; }
+.movement.off .duo, .movement.off .intro-fields { opacity: .4; pointer-events: none; }
+
+/* ---------- 出片 ---------- */
+.press { position: sticky; top: 20px; align-self: start; padding: 26px; border-radius: 16px;
+  background: linear-gradient(180deg, rgba(27, 19, 16, .92), rgba(27, 19, 16, .78)); border: 1px solid var(--rule); }
+.press h3 { margin: 0 0 6px; font: italic 400 34px/1.1 var(--display); color: var(--ivory); }
+.press .sub { margin: 0 0 22px; color: var(--ivory-2); font-size: 14px; }
+.press .row { display: flex; gap: 10px; flex-wrap: wrap; }
+.press .row .btn { flex: 1; justify-content: center; }
+.press .row .btn.primary { padding: 12px 18px; font-size: 16px; }
+
+.meter { margin-top: 24px; display: none; }
+.meter.on { display: block; }
+.meter .staff { position: relative; height: 26px; }
+.meter .staff::before { content: ""; position: absolute; inset: 0;
+  background: repeating-linear-gradient(180deg, var(--ivory-3) 0 1px, transparent 1px 6px); }
+.meter .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; transition: width .6s var(--ease);
+  background: repeating-linear-gradient(180deg, var(--brass-hi) 0 1px, transparent 1px 6px); }
+.meter .fill::after { content: ""; position: absolute; right: -5px; top: 50%; width: 10px; height: 8px; margin-top: -4px; border-radius: 50%;
+  background: var(--brass-hi); transform: rotate(-20deg); box-shadow: 0 0 12px var(--brass-hi); }
+.meter .status { display: flex; justify-content: space-between; gap: 12px; margin-top: 10px; font-size: 14px; color: var(--ivory-2); }
+.meter .status b { font: 400 15px var(--display); color: var(--ivory); font-variant-numeric: tabular-nums; }
+.meter.failed .fill { background: repeating-linear-gradient(180deg, var(--felt) 0 1px, transparent 1px 6px); }
+.meter pre { white-space: pre-wrap; font-size: 12px; max-height: 160px; overflow: auto; color: var(--ivory-2); background: rgba(0,0,0,.3); padding: 10px; border-radius: 8px; }
+
+.result { margin-top: 22px; display: none; }
+.result.on { display: block; }
+.result video { width: 100%; border-radius: 10px; background: #000; display: block; }
+.result .row { margin-top: 12px; }
+.result .where { margin: 10px 0 0; font-size: 13px; color: var(--ivory-3); word-break: break-all; }
+
+/* ---------- 待上传 ---------- */
+.shelf { padding: 30px 0 80px; border-top: 1px solid var(--rule); }
+.shelf-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+.shelf-head h3 { margin: 0; font: 600 24px/1.3 var(--text); letter-spacing: .08em; }
+.shelf-head h3 i { font: italic 400 20px var(--display); color: var(--brass-hi); letter-spacing: 0; margin-left: 10px; }
+.records { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 26px 22px; }
+.record { text-align: left; padding: 0; border: 0; background: none; cursor: pointer; }
+.record .sleeve { aspect-ratio: 16 / 9; border-radius: 10px; background: #0d0907 center / cover no-repeat; position: relative; overflow: hidden;
+  box-shadow: 0 16px 30px -18px rgba(0,0,0,.9); transition: transform .35s var(--ease), box-shadow .35s var(--ease); }
+.record:hover .sleeve { transform: translateY(-3px); box-shadow: 0 22px 34px -18px rgba(0,0,0,.95); }
+.record .sleeve::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px rgba(239,230,210,.08); }
+.record b { display: block; margin-top: 10px; font-weight: 600; font-size: 15px; line-height: 1.5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.record small { color: var(--ivory-3); font: 14px var(--display); }
+.empty { color: var(--ivory-2); padding: 30px 0; }
+
+/* ---------- 发布台 ---------- */
+.tour { padding: 34px 0 90px; border-top: 1px solid var(--rule); }
+.tour-pick { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-bottom: 26px; }
+.tour-pick .sleeve { width: 160px; aspect-ratio: 16 / 9; border-radius: 8px; background: #0d0907 center / cover no-repeat; flex: none; }
+.tour-pick select { min-width: min(420px, 100%); padding: 10px 14px; border-radius: 10px; border: 1px solid var(--rule);
+  background: var(--ebony); color: var(--ivory); font-size: 15px; }
+.tour-pick .meta { font-size: 14px; color: var(--ivory-2); }
+.program { border-top: 1px solid var(--rule); }
+.act { display: grid; grid-template-columns: 200px 1fr 230px; gap: 24px; padding: 18px 0; border-bottom: 1px solid var(--rule); }
+.act-name { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; }
+.act-name input { width: 18px; height: 18px; margin-top: 5px; accent-color: var(--brass); }
+.act-name b { display: block; font: 600 19px/1.4 var(--text); }
+.act-name small { color: var(--ivory-3); font-size: 13px; }
+.act-fields { display: grid; gap: 10px; }
+.act:not(.on) .act-fields, .act:not(.on) .act-state { opacity: .35; pointer-events: none; }
+.act-fields .field { margin: 0; }
+.act-fields .field > span { display: flex; justify-content: space-between; }
+.act-fields .field > span em { font: normal 13px var(--display); color: var(--ivory-3); }
+.act-fields .field > span em.over { color: var(--felt); }
+.act-fields textarea { min-height: 110px; }
+.act-note { font-size: 13px; color: var(--brass-hi); }
+.act-state { font-size: 14px; color: var(--ivory-2); }
+.pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 13px; border: 1px solid var(--rule); color: var(--ivory-2); margin-bottom: 6px; }
+.pill.login { border-color: var(--brass-hi); color: var(--brass-hi); }
+.pill.uploading, .pill.open { border-color: var(--ivory-2); color: var(--ivory); }
+.pill.ready { background: var(--brass); border-color: var(--brass); color: var(--ebony); font-weight: 600; }
+.pill.error { background: var(--felt); border-color: var(--felt); color: #fff; }
+.act-state .miss { color: var(--brass-hi); }
+.tour-go { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-top: 26px; }
+.tour-go .btn.primary { padding: 12px 26px; font-size: 16px; }
+.tour-go p { margin: 0; color: var(--ivory-2); font-size: 14px; max-width: 60ch; }
+@media (max-width: 900px) { .act { grid-template-columns: 1fr; gap: 12px; } }
+
+dialog { border: 1px solid var(--rule); border-radius: 16px; padding: 22px; width: min(900px, 100% - 32px); background: var(--ebony); color: var(--ivory); }
+dialog::backdrop { background: rgba(10, 3, 5, .72); backdrop-filter: blur(3px); }
+dialog video { width: 100%; max-height: 62vh; border-radius: 10px; background: #000; display: block; }
+dialog h4 { margin: 0 0 14px; font: 600 20px/1.4 var(--text); }
+dialog .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+dialog .close { float: right; }
+
+.toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+  padding: 12px 20px; border-radius: 12px; background: var(--ivory); color: var(--ebony); font-size: 15px; max-width: calc(100% - 32px);
+  transition: opacity .3s var(--ease), transform .3s var(--ease); box-shadow: 0 12px 40px rgba(0,0,0,.5); }
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+.toast.err { background: var(--felt); color: #fff; }
+
+@media (max-width: 1080px) {
+  .desk { grid-template-columns: 1fr 1fr; }
+  .press { grid-column: 1 / -1; position: static; margin-bottom: 32px; }
+}
+@media (max-width: 680px) {
+  .desk { grid-template-columns: 1fr; padding-top: 32px; }
+  .masthead { flex-direction: column; align-items: flex-start; }
+  .wordmark .zh { font-size: 34px; }
+  .piece { display: none; }
+  .stage-shell { padding: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .intro-on .disc { animation: none; }
+  *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
+</style>
+<link rel="stylesheet" href="/glass.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <h1 class="wordmark"><span class="zh">琴房</span><span class="la">Piano Atelier</span></h1>
+    <div class="mast-actions">
+      <a class="btn" href="/flick">拨片开头</a>
+      <button class="btn" id="goShelf" type="button">待上传 <span class="count" id="shelfCount">0</span></button>
+      <button class="btn" id="goTour" type="button">一键发布</button>
+      <button class="btn" id="openDeliver" type="button">打开待上传文件夹</button>
+      <button class="btn" id="openJianying" type="button">打开剪映</button>
+    </div>
+  </header>
+
+  <section class="stage-shell" aria-label="预览">
+    <div class="stage" id="stage">
+      <canvas id="canvas"></canvas>
+      <label class="drop" id="drop">
+        <input type="file" id="midiInput" accept=".mid,.midi,.mp3,.wav,.m4a,.flac,.ogg" hidden>
+        <div>
+          <h2>Ouverture<span>导入 MIDI</span></h2>
+          <p>把 .mid 文件拖到这里，或点击选择</p>
+          <p>没有 MIDI？拖入钢琴录音（mp3、wav），会自动转成 MIDI</p>
+        </div>
+      </label>
+    </div>
+    <div class="transport">
+      <button class="play" id="play" type="button" aria-label="播放" disabled>
+        <svg viewBox="0 0 24 24" id="playIcon"><path fill="currentColor" d="M7 4.5v15l13-7.5z"/></svg>
+      </button>
+      <span class="time" id="time">0:00 / 0:00</span>
+      <input class="scrub" id="scrub" type="range" min="0" max="1" step="0.01" value="0" aria-label="进度" disabled>
+      <span class="piece" id="piece">尚未导入曲目</span>
+    </div>
+  </section>
+
+  <main class="desk">
+    <div>
+      <section class="movement">
+        <h3><i>I</i>曲目</h3>
+        <label class="field"><span>曲库</span>
+          <select id="songLib" class="lib-select"><option value="">从曲库载入…</option></select>
+          <div class="hint">songs 文件夹里的 MIDI；录音转写的结果也会自动放进来</div>
+        </label>
+        <label class="field"><span>画面标题</span><input type="text" id="title" placeholder="Merry Christmas Mr. Lawrence"></label>
+        <label class="field"><span>副标题</span><input type="text" id="subtitle" placeholder="Original : Ryuichi Sakamoto"></label>
+        <label class="field"><span>水印</span><input type="text" id="watermark" placeholder="@你的抖音号"><div class="hint">显示在画面右下角</div></label>
+      </section>
+      <section class="movement">
+        <h3><i>II</i>画面</h3>
+        <div class="field">
+          <span>画幅</span>
+          <div class="seg" role="radiogroup" aria-label="画幅">
+            <label><input type="radio" name="orient" value="h" checked><span>横屏 16:9</span></label>
+            <label><input type="radio" name="orient" value="v"><span>竖屏 9:16</span></label>
+          </div>
+        </div>
+        <div class="field">
+          <span>背景</span>
+          <div class="asset">
+            <div class="thumb" id="bgThumb">bg</div>
+            <div class="info"><b id="bgName">默认深色渐变</b><small>图片或视频，视频会循环播放</small></div>
+            <div class="actions">
+              <label class="btn">选择<input type="file" id="bgInput" accept="image/*,video/*" hidden></label>
+              <button class="link" id="bgClear" type="button" hidden>移除</button>
+            </div>
+          </div>
+        </div>
+        <label class="field"><span>背景亮度</span>
+          <div class="slider"><input type="range" id="bgDim" min="0.15" max="1" step="0.05" value="0.45"><output id="bgDimOut">45%</output></div>
+        </label>
+        <div class="field">
+          <span>帧率</span>
+          <div class="seg" role="radiogroup" aria-label="帧率">
+            <label><input type="radio" name="fps" value="60" checked><span>60 帧，更顺滑</span></label>
+            <label><input type="radio" name="fps" value="30"><span>30 帧，出片快一倍</span></label>
+          </div>
+        </div>
+      </section>
+      <section class="movement off" id="introMovement">
+        <h3><i>V</i>开头</h3>
+        <div class="field">
+          <span>爆款开头（4 秒，高潮片段前置）</span>
+          <div class="seg" role="radiogroup" aria-label="开头">
+            <label><input type="radio" name="intro" value="on"><span>加开头</span></label>
+            <label><input type="radio" name="intro" value="off" checked><span>不加</span></label>
+          </div>
+        </div>
+        <div class="duo" id="duo">
+          <label class="disc" title="更换头像（会作为以后的默认头像）">
+            <input type="file" id="avatarInput" accept="image/*" hidden>
+            <span class="label" id="avatarLabel">头像</span>
+          </label>
+          <span class="x" aria-hidden="true">×</span>
+          <label class="disc" title="上传曲子封面">
+            <input type="file" id="coverInput" accept="image/*" hidden>
+            <span class="label" id="coverLabel">点击上传<br>曲子封面</span>
+          </label>
+        </div>
+        <div class="duo-names"><span id="leftName">谬紫克！</span><span id="rightName">联动对象</span></div>
+        <div class="intro-fields">
+          <label class="field"><span>联动对象</span><input type="text" id="introArtist" placeholder="TRA$H"></label>
+          <label class="field"><span>开头显示的曲名</span><input type="text" id="introTitle" placeholder="patient"></label>
+          <button class="btn" id="introPreview" type="button" disabled>预览开头</button>
+          <div class="hint">左边是你的头像，点击可更换；右边每首曲子换成它的封面。开头会自动截取曲子里最抓耳的 4 秒。</div>
+        </div>
+      </section>
+    </div>
+
+    <div>
+      <section class="movement">
+        <h3><i>III</i>声音</h3>
+        <div class="field">
+          <span>背景音</span>
+          <div class="asset">
+            <div class="thumb" id="bgmThumb">♪</div>
+            <div class="info"><b id="bgmName">不加背景音</b><small>雨声、白噪音、弦乐铺底，会循环铺满全片</small></div>
+            <div class="actions">
+              <label class="btn">选择<input type="file" id="bgmInput" accept="audio/*" hidden></label>
+              <button class="link" id="bgmClear" type="button" hidden>移除</button>
+            </div>
+          </div>
+        </div>
+        <label class="field"><span>背景音音量</span>
+          <div class="slider"><input type="range" id="bgmVol" min="0" max="1" step="0.05" value="0.3"><output id="bgmVolOut">30%</output></div>
+          <div class="hint">相对钢琴声；预览时可以直接听效果</div>
+        </label>
+      </section>
+      <section class="movement">
+        <h3><i>IV</i>发布</h3>
+        <label class="field"><span>抖音标题</span><input type="text" id="douyinTitle" placeholder="第3集：圣诞快乐劳伦斯先生 完整版"></label>
+        <label class="field"><span>话题</span><input type="text" id="tags" placeholder="钢琴 助眠 纯音乐"><div class="hint">用空格或逗号分隔，不用加 #</div></label>
+        <label class="field"><span>文案</span><textarea id="description" placeholder="睡前听一首，晚安。"></textarea></label>
+      </section>
+    </div>
+
+    <aside class="press" aria-live="polite">
+      <h3>Finale</h3>
+      <p class="sub">生成可直接上传抖音的成片，同时在剪映里生成一份可编辑的草稿。</p>
+      <div class="row">
+        <button class="btn" id="previewRender" type="button" disabled>试渲染 15 秒</button>
+        <button class="btn primary" id="fullRender" type="button" disabled>生成视频</button>
+      </div>
+      <div class="meter" id="meter">
+        <div class="staff"><div class="fill" id="fill"></div></div>
+        <div class="status"><span id="stageText">排队中</span><b id="pctText">0%</b></div>
+        <pre id="log" hidden></pre>
+      </div>
+      <div class="result" id="result">
+        <video id="resultVideo" controls playsinline preload="metadata"></video>
+        <div class="row">
+          <button class="btn" id="openResult" type="button">打开所在文件夹</button>
+          <button class="btn" id="copyResult" type="button">复制发布文案</button>
+        </div>
+        <p class="where" id="where"></p>
+      </div>
+    </aside>
+  </main>
+
+  <section class="shelf" id="shelf">
+    <div class="shelf-head">
+      <h3>待上传<i>Répertoire</i></h3>
+      <button class="btn" id="refreshShelf" type="button">刷新</button>
+    </div>
+    <div class="records" id="records"></div>
+  </section>
+
+  <section class="tour" id="tour">
+    <div class="shelf-head">
+      <h3>发布台<i>Tournée</i></h3>
+    </div>
+    <div class="tour-pick">
+      <div class="sleeve" id="tourCover"></div>
+      <div>
+        <select id="tourVideo" aria-label="选择要发布的成片"></select>
+        <div class="meta" id="tourMeta"></div>
+      </div>
+    </div>
+    <div class="field">
+      <span>画幅</span>
+      <div class="seg" role="radiogroup" aria-label="发布画幅">
+        <label><input type="radio" name="tourOrient" value="auto" checked><span>竖屏平台发竖屏版</span></label>
+        <label><input type="radio" name="tourOrient" value="horizontal"><span>全部发横屏版</span></label>
+      </div>
+    </div>
+    <div class="field">
+      <span>自主声明（目前支持抖音）</span>
+      <div class="seg" role="radiogroup" aria-label="自主声明">
+        <label><input type="radio" name="tourDeclare" value="ai"><span>内容由 AI 生成</span></label>
+        <label><input type="radio" name="tourDeclare" value="none" checked><span>不声明</span></label>
+      </div>
+    </div>
+    <div class="program" id="program"></div>
+    <div class="tour-go">
+      <button class="btn primary" id="tourStart" type="button" disabled>开始发布</button>
+      <p id="tourHint">会打开一个专用的 Edge 窗口，逐个平台上传并填好内容，停在「发布」按钮前等你检查。第一次使用每个平台需要扫码登录一次。</p>
+    </div>
+  </section>
+</div>
+
+<dialog id="viewer">
+  <button class="btn close" type="button" id="viewerClose">关闭</button>
+  <h4 id="viewerTitle"></h4>
+  <video id="viewerVideo" controls playsinline></video>
+  <div class="row">
+    <button class="btn" id="viewerOpen" type="button">打开所在文件夹</button>
+    <button class="btn" id="viewerCopy" type="button">复制发布文案</button>
+    <button class="btn primary" id="viewerPublish" type="button">发布到各平台</button>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status"></div>
+<audio id="piano" preload="auto"></audio>
+<audio id="bgmAudio" preload="auto" loop></audio>
+<video id="bgVideo" muted loop playsinline hidden></video>
+
+<script>
+(() => {
+"use strict";
+const $ = (s) => document.querySelector(s);
+const LOOK = 2.6;                // 音符下落时间，与 piano/config.yaml 一致
+const LEAD = 3.0;                // 成片片头留白
+const BLACK = new Set([1, 3, 6, 8, 10]);
+const SPARK_LIFE = 0.9, SPARKS = 6, SHEEN_TIME = 0.45, SCRIM = 0.6;   // 与 config.yaml 的 effects 一致
+// 按音符序号生成固定的随机数序列（mulberry32），光点轨迹不随拖动进度变化
+function rng(seed) {
+  let a = (seed * 2654435761) >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const state = {
+  session: null, midi: null, notes: [], duration: 0,
+  t: -LOOK, playing: false, last: 0,
+  bg: null, bgImg: null, bgm: null, cover: null, vertical: false,
+  intro: reduceMotion ? null : performance.now(),
+};
+
+// ---------- 设置的本地记忆 ----------
+const KEEP = ["watermark", "tags", "bgDim", "bgmVol"];
+try {
+  const saved = JSON.parse(localStorage.getItem("qinfang") || "{}");
+  KEEP.forEach((k) => { if (saved[k] != null) $("#" + k).value = saved[k]; });
+  if (saved.fps) document.querySelector(`input[name=fps][value="${saved.fps}"]`).checked = true;
+} catch (e) { /* 浏览器禁用存储时忽略 */ }
+function remember() {
+  try {
+    const o = {}; KEEP.forEach((k) => (o[k] = $("#" + k).value));
+    o.fps = document.querySelector("input[name=fps]:checked").value;
+    localStorage.setItem("qinfang", JSON.stringify(o));
+  } catch (e) { /* 忽略 */ }
+}
+
+// ---------- 提示 ----------
+let toastTimer;
+function toast(msg, err = false) {
+  const el = $("#toast");
+  el.textContent = msg; el.classList.toggle("err", err); el.classList.add("on");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("on"), err ? 5200 : 2600);
+}
+
+async function api(path, opts = {}) {
+  const r = await fetch(path, opts);
+  const data = await r.json().catch(() => ({ error: "服务没有响应，确认琴房窗口还开着" }));
+  if (!r.ok || data.error) throw new Error(data.error || r.statusText);
+  return data;
+}
+const post = (path, body) => api(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+
+async function upload(kind, file) {
+  const q = new URLSearchParams({ kind, name: file.name, session: state.session || "" });
+  const res = await api("/api/upload?" + q, { method: "POST", body: file });
+  if (res.session) state.session = res.session;
+  return res;
+}
+
+// ---------- 键盘布局（与 piano/keyboard.py 同算法） ----------
+function keyRange() {
+  if (!(state.vertical || state.keyAuto) || !state.notes.length) return [21, 108];
+  let lo = state.low - 2, hi = state.high + 2;
+  while (hi - lo < 48) { lo--; hi++; }
+  lo = Math.max(lo, 21); hi = Math.min(hi, 108);
+  while (lo > 21 && ![0, 5].includes(lo % 12)) lo--;
+  while (hi < 108 && ![4, 11].includes(hi % 12)) hi++;
+  return [lo, hi];
+}
+let layoutCache = null;
+function layout() {
+  const VW = state.vertical ? 1080 : 1920, VH = state.vertical ? 1920 : 1080;
+  const [lo, hi] = keyRange();
+  const key = `${VW}-${VH}-${lo}-${hi}`;
+  if (layoutCache && layoutCache.key === key) return layoutCache;
+  const whites = [];
+  for (let p = lo; p <= hi; p++) if (!BLACK.has(p % 12)) whites.push(p);
+  const ww = VW / whites.length, bw = ww * 0.58;
+  const kbH = Math.min(VH * 0.21, ww * 6.4);
+  const kbY = VH * (state.vertical ? 0.82 : 0.91) - kbH;
+  const rects = {};
+  let wi = 0;
+  for (let p = lo; p <= hi; p++) {
+    if (BLACK.has(p % 12)) rects[p] = [wi * ww - bw / 2, wi * ww + bw / 2, true];
+    else { rects[p] = [wi * ww, (wi + 1) * ww, false]; wi++; }
+  }
+  layoutCache = { key, VW, VH, lo, hi, ww, kbH, kbY, bh: kbH * 0.63, rects, speed: kbY / LOOK };
+  return layoutCache;
+}
+
+// ---------- 画布 ----------
+const canvas = $("#canvas"), ctx = canvas.getContext("2d");
+const noteCanvas = document.createElement("canvas"), nctx = noteCanvas.getContext("2d");
+// 标题/副标题文字区底边（与 piano/overlay.py 的 title_band 一致）
+function titleBand(VW, VH) {
+  const hasTitle = $("#title").value.trim() || state.midi, hasSub = $("#subtitle").value.trim();
+  if (!hasTitle && !hasSub) return 0;
+  const s = Math.min(VW, VH);
+  return VH * 0.04 + s * (0.07 + (hasSub ? 0.085 : 0.02));
+}
+function fit() {
+  const r = canvas.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2);
+  if (!r.width || !r.height) return;       // 页面被隐藏（软件里切到别的页面）时保持原尺寸
+  canvas.width = Math.round(r.width * dpr); canvas.height = Math.round(r.height * dpr);
+  draw(state.notes.length ? state.t : 0);   // 改尺寸会清空画布，立即重绘避免闪黑
+}
+new ResizeObserver(fit).observe(canvas);
+
+const CJK = /[　-鿿＀-￯]/;
+function fontFor(text, size) {
+  return CJK.test(text)
+    ? `${size}px "Microsoft YaHei", "PingFang SC", sans-serif`
+    : `small-caps ${size}px "Palatino Linotype", "Book Antiqua", Palatino, serif`;
+}
+function fitText(text, size, maxW) {
+  ctx.font = fontFor(text, size);
+  while (size > 12 && ctx.measureText(text).width > maxW) { size = Math.floor(size * 0.92); ctx.font = fontFor(text, size); }
+}
+
+function drawBackground(L) {
+  const { VW, VH } = L;
+  const src = state.bg && (state.bg.kind === "video" ? $("#bgVideo") : state.bgImg);
+  const ready = src && (state.bg.kind === "video" ? src.readyState >= 2 : src.complete && src.naturalWidth);
+  if (ready) {
+    const sw = src.videoWidth || src.naturalWidth, sh = src.videoHeight || src.naturalHeight;
+    const s = Math.max(VW / sw, VH / sh);
+    ctx.drawImage(src, (VW - sw * s) / 2, (VH - sh * s) / 2, sw * s, sh * s);
+    ctx.fillStyle = `rgba(0,0,0,${1 - +$("#bgDim").value})`;
+    ctx.fillRect(0, 0, VW, VH);
+  } else {
+    const g = ctx.createLinearGradient(0, 0, 0, VH);
+    g.addColorStop(0, "#161616"); g.addColorStop(1, "#050505");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+    const v = ctx.createRadialGradient(VW / 2, VH / 2, 0, VW / 2, VH / 2, Math.hypot(VW, VH) / 2);
+    v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,.5)");
+    ctx.fillStyle = v; ctx.fillRect(0, 0, VW, VH);
+  }
+}
+
+function draw(t) {
+  const L = layout(), { VW, VH, kbY, kbH, ww, rects, speed } = L;
+  const scale = canvas.width / VW;
+  ctx.setTransform(scale, 0, 0, canvas.height / VH, 0, 0);
+  drawBackground(L);
+
+  // 下落音符：一条路径一次填充，发光用 shadowBlur
+  const notes = state.notes, pressed = [];
+  const path = new Path2D(), pad = ww * 0.08;
+  for (let i = 0; i < notes.length; i++) {
+    const [p, s, e] = notes[i];
+    if (s > t + LOOK) break;               // notes 按开始时间排序
+    const end = Math.max(e - 0.03, s + 0.04);
+    if (end <= t || !rects[p]) continue;
+    if (s <= t) pressed.push(i);
+    const [x0, x1] = rects[p];
+    const yb = Math.min(kbY - (s - t) * speed, kbY), yt = Math.max(kbY - (end - t) * speed, -10);
+    const w = x1 - x0 - 2 * pad, h = yb - yt;
+    path.roundRect(x0 + pad, yt, w, h, Math.max(1, Math.min(6, w / 2 - 1, h / 2 - 1)));
+  }
+  // 击键光点：每个音符的参数由序号决定，拖动进度条也一致
+  const sparks = new Path2D(), sparkAlpha = [];
+  const g = 320, kScale = VH / 1080;
+  for (let i = 0; i < notes.length; i++) {
+    const [p, s] = notes[i];
+    if (s > t) break;
+    const age = t - s;
+    if (age > SPARK_LIFE || !rects[p]) continue;
+    const cx = (rects[p][0] + rects[p][1]) / 2, rnd = rng(i);
+    for (let k = 0; k < SPARKS; k++) {
+      const vx = (rnd() * 140 - 70) * kScale, vy = (140 + rnd() * 240) * kScale;
+      const life = 0.45 + rnd() * (SPARK_LIFE - 0.45), rad = (2.2 + rnd() * 2.4) * kScale;
+      if (age >= life) continue;
+      const py = kbY - 2 - (vy * age - 0.5 * g * kScale * age * age);
+      if (py >= kbY) continue;
+      sparkAlpha.push([cx + vx * age, py, rad, Math.pow(1 - age / life, 1.5)]);
+    }
+  }
+  // 音符先画在离屏画布上，再裁掉标题区（与成片一致：音符在标题下方才出现，标题不被遮挡）
+  if (noteCanvas.width !== canvas.width || noteCanvas.height !== canvas.height) {
+    noteCanvas.width = canvas.width; noteCanvas.height = canvas.height;
+  }
+  nctx.setTransform(1, 0, 0, 1, 0, 0); nctx.clearRect(0, 0, noteCanvas.width, noteCanvas.height);
+  nctx.setTransform(scale, 0, 0, canvas.height / VH, 0, 0);
+  nctx.shadowColor = "rgba(123,104,255,.95)"; nctx.shadowBlur = 26 * scale;
+  nctx.fillStyle = "#e6e0ff"; nctx.fill(path);
+  for (const [x, y, r, a] of sparkAlpha) {
+    nctx.globalAlpha = a; nctx.beginPath(); nctx.arc(x, y, r, 0, Math.PI * 2); nctx.fill();
+  }
+  nctx.globalAlpha = 1; nctx.shadowBlur = 0;
+  const band = titleBand(VW, VH);
+  if (band > 0) {
+    const y0 = band + VH * 0.01, y1 = y0 + VH * 0.14;
+    const mg = nctx.createLinearGradient(0, y0, 0, y1);
+    mg.addColorStop(0, "rgba(0,0,0,0)"); mg.addColorStop(0.5, "rgba(0,0,0,.5)"); mg.addColorStop(1, "rgba(0,0,0,1)");
+    nctx.globalCompositeOperation = "destination-in";
+    nctx.fillStyle = mg; nctx.fillRect(0, 0, VW, VH);
+    nctx.globalCompositeOperation = "source-over";
+  }
+  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(noteCanvas, 0, 0); ctx.restore();
+
+  // 击键闪光
+  for (const i of pressed) {
+    const [p, s] = notes[i], [x0, x1] = rects[p], cx = (x0 + x1) / 2;
+    const k = 0.45 + 0.55 * Math.exp(-(t - s) / 0.18), r = ww * 2.2;
+    const g = ctx.createRadialGradient(cx, kbY, 0, cx, kbY, r);
+    g.addColorStop(0, `rgba(150,135,255,${0.55 * k})`); g.addColorStop(1, "rgba(123,104,255,0)");
+    ctx.fillStyle = g; ctx.fillRect(cx - r, kbY - r, r * 2, r);
+  }
+
+  // 琴键顶部亮线 + 流光（每 4 秒来回一趟）+ 按键处彩色光晕
+  const down = new Set(pressed.map((i) => notes[i][0]));
+  ctx.fillStyle = "#b8b8c2"; ctx.fillRect(0, kbY - 3, VW, 3);
+  const period = 4, u = (((t % period) + period) % period) / period;
+  const flowX = Math.floor(t / period) % 2 === 0 ? (u * 1.4 - 0.2) * VW : (1.2 - u * 1.4) * VW;
+  const flow = ctx.createLinearGradient(flowX - VW * 0.12, 0, flowX + VW * 0.12, 0);
+  flow.addColorStop(0, "rgba(255,255,255,0)"); flow.addColorStop(0.5, "rgba(255,255,255,.9)"); flow.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = flow; ctx.fillRect(flowX - VW * 0.12, kbY - 3, VW * 0.24, 3);
+  for (const i of pressed) {
+    const [p] = notes[i], cx = (rects[p][0] + rects[p][1]) / 2, r = ww * 2.4;
+    const lg = ctx.createLinearGradient(cx - r, 0, cx + r, 0);
+    lg.addColorStop(0, "rgba(160,145,255,0)"); lg.addColorStop(0.5, "rgba(190,180,255,1)"); lg.addColorStop(1, "rgba(160,145,255,0)");
+    ctx.fillStyle = lg; ctx.fillRect(cx - r, kbY - 3, r * 2, 3);
+  }
+  // 刚按下的琴键：一道亮带从上往下扫过
+  const sheen = (x0, x1, top, h, s) => {
+    const age = (t - s) / SHEEN_TIME;
+    if (age < 0 || age >= 1) return;
+    const cy = top - 0.25 * kbH + age * 1.5 * kbH, bw = kbH * 0.2;
+    const sg = ctx.createLinearGradient(0, cy - bw, 0, cy + bw);
+    sg.addColorStop(0, "rgba(255,255,255,0)"); sg.addColorStop(0.5, `rgba(255,255,255,${0.6 * (1 - age)})`); sg.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = sg; ctx.fillRect(x0, Math.max(top, cy - bw), x1 - x0, Math.min(top + h, cy + bw) - Math.max(top, cy - bw));
+  };
+  const pressStart = {};
+  for (const i of pressed) pressStart[notes[i][0]] = notes[i][1];
+  const wg = ctx.createLinearGradient(0, kbY, 0, kbY + kbH);
+  wg.addColorStop(0, "#a8a8a8"); wg.addColorStop(0.45, "#e6e6e6"); wg.addColorStop(0.94, "#e6e6e6"); wg.addColorStop(0.95, "#bdbdbd");
+  ctx.fillStyle = "#1a1a1a"; ctx.fillRect(0, kbY, VW, kbH);
+  for (const p in rects) {
+    const [x0, x1, black] = rects[p];
+    if (black) continue;
+    ctx.fillStyle = down.has(+p) ? "#bcb4f0" : wg;
+    ctx.fillRect(x0, kbY, x1 - x0 - 1, kbH);
+    if (down.has(+p)) sheen(x0, x1 - 1, kbY, kbH, pressStart[p]);
+  }
+  const bg = ctx.createLinearGradient(0, kbY, 0, kbY + L.bh);
+  bg.addColorStop(0, "#0c0c0c"); bg.addColorStop(0.88, "#1f1f1f"); bg.addColorStop(0.9, "#3a3a3a");
+  for (const p in rects) {
+    const [x0, x1, black] = rects[p];
+    if (!black) continue;
+    ctx.fillStyle = down.has(+p) ? "#8a7fe0" : bg;
+    ctx.fillRect(x0, kbY, x1 - x0, L.bh);
+    if (down.has(+p)) sheen(x0, x1, kbY, L.bh, pressStart[p]);
+  }
+  const felt = ctx.createLinearGradient(0, kbY, 0, kbY + kbH * 0.05);
+  felt.addColorStop(0, "rgba(0,0,0,.65)"); felt.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = felt; ctx.fillRect(0, kbY, VW, kbH * 0.05);
+
+  // 文字（与成片排版一致），先铺渐隐蒙版，文字在蒙版上方
+  const s = Math.min(VW, VH), x = VW * 0.075, maxW = VW - 2 * x;
+  let y = VH * 0.04 + s * 0.07;
+  ctx.textBaseline = "alphabetic"; ctx.textAlign = "left";
+  const title = $("#title").value.trim() || (state.midi ? state.midi.stem : "");
+  const subText = $("#subtitle").value.trim(), markText = $("#watermark").value.trim();
+  if (title || subText) {
+    const bottom = VH * 0.04 + s * (0.07 + (subText ? 0.085 : 0.02)), fade = VH * 0.16;
+    const sg = ctx.createLinearGradient(0, 0, 0, bottom + fade);
+    const k = bottom / (bottom + fade);
+    sg.addColorStop(0, `rgba(0,0,0,${SCRIM})`); sg.addColorStop(k, `rgba(0,0,0,${SCRIM})`);
+    sg.addColorStop(k + (1 - k) * 0.5, `rgba(0,0,0,${SCRIM / 2})`); sg.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = sg; ctx.fillRect(0, 0, VW, bottom + fade);
+  }
+  if (markText) {
+    const kbBottom = kbY + kbH, ramp = (VH - kbBottom) / 3;
+    const bg2 = ctx.createLinearGradient(0, kbBottom, 0, kbBottom + ramp);
+    bg2.addColorStop(0, "rgba(0,0,0,0)"); bg2.addColorStop(1, `rgba(0,0,0,${SCRIM})`);
+    ctx.fillStyle = bg2; ctx.fillRect(0, kbBottom, VW, ramp);
+    ctx.fillStyle = `rgba(0,0,0,${SCRIM})`; ctx.fillRect(0, kbBottom + ramp, VW, VH - kbBottom - ramp);
+  }
+  if (title) { fitText(title, s * 0.058, maxW); ctx.fillStyle = "#f0f0f0"; ctx.fillText(title, x, y); y += s * 0.065; }
+  if (subText) { fitText(subText, s * 0.034, maxW); ctx.fillStyle = "#c4c4c4"; ctx.fillText(subText, x, y); }
+  if (markText) {
+    fitText(markText, s * 0.03, maxW / 2); ctx.fillStyle = "rgba(255,255,255,.75)"; ctx.textAlign = "right";
+    ctx.fillText(markText, VW - x, VH - s * 0.05);
+  }
+}
+
+// 首屏：琴键上奏一段琶音，作为唯一的入场动画
+function drawIntro(now) {
+  const L = layout(), { VW, kbY, kbH, rects } = L;
+  const el = (now - state.intro) / 1000;
+  const arp = [48, 52, 55, 60, 64, 67, 72, 76, 79, 84];
+  const fakeNotes = arp.map((p, i) => [p, 0.12 * i, 0.12 * i + 0.9, 1]);
+  const saved = state.notes; state.notes = fakeNotes;
+  draw(el - 0.2);
+  state.notes = saved;
+  return el < 2.4;
+}
+
+function fmt(t) { t = Math.max(0, t); return `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`; }
+const piano = $("#piano"), bgmAudio = $("#bgmAudio");
+
+function tick(now) {
+  // 不播放时每秒只重画约 10 次（改设置时画面照样会更新），页面被切走时不画，避免占用 CPU 导致卡顿
+  const idle = !state.playing && !state.intro;
+  if ((idle && now - (state.idleAt || 0) < 100) || (window.shellHidden && !state.playing) || VIEW === "tour") {
+    state.last = now;
+    return requestAnimationFrame(tick);
+  }
+  state.idleAt = now;
+  const dt = Math.min(0.1, (now - (state.last || now)) / 1000);
+  state.last = now;
+  if (state.intro && !state.notes.length) {
+    if (!drawIntro(now)) state.intro = null;
+  } else if (state.notes.length) {
+    if (state.playing) {
+      if (state.t < 0) {
+        state.t += dt;
+        if (state.t >= 0) { piano.currentTime = 0; piano.play(); }
+      } else if (!piano.paused) {
+        state.t = piano.currentTime;
+      } else {
+        state.t += dt;
+      }
+      if (state.t >= state.duration + 1) pause();
+    }
+    draw(state.t);
+    const total = state.duration;
+    $("#time").textContent = `${fmt(state.t)} / ${fmt(total)}`;
+    const scrub = $("#scrub");
+    if (!scrub.matches(":active")) scrub.value = state.t;
+    scrub.style.setProperty("--p", `${((state.t + LOOK) / (total + 1 + LOOK)) * 100}%`);
+  } else {
+    draw(0);
+  }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+// ---------- 播放控制 ----------
+const ICON_PLAY = '<path fill="currentColor" d="M7 4.5v15l13-7.5z"/>';
+const ICON_PAUSE = '<path fill="currentColor" d="M6 4.5h4v15H6zm8 0h4v15h-4z"/>';
+function play() {
+  if (!state.notes.length) return;
+  if (state.t >= state.duration) state.t = -LOOK;
+  state.playing = true; state.last = 0;
+  if (state.t >= 0) { piano.currentTime = state.t; piano.play(); }
+  if (state.bgm) { bgmAudio.volume = +$("#bgmVol").value; bgmAudio.play(); }
+  if (state.bg && state.bg.kind === "video") $("#bgVideo").play();
+  $("#playIcon").innerHTML = ICON_PAUSE; $("#play").setAttribute("aria-label", "暂停");
+}
+function pause() {
+  state.playing = false; piano.pause(); bgmAudio.pause();
+  $("#playIcon").innerHTML = ICON_PLAY; $("#play").setAttribute("aria-label", "播放");
+}
+$("#play").addEventListener("click", () => (state.playing ? pause() : play()));
+$("#scrub").addEventListener("input", (e) => {
+  state.t = +e.target.value;
+  if (state.t >= 0) piano.currentTime = state.t; else piano.pause();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.code !== "Space" || /INPUT|TEXTAREA|BUTTON|VIDEO/.test(document.activeElement.tagName)) return;
+  e.preventDefault(); state.playing ? pause() : play();
+});
+
+// ---------- 导入 MIDI / 录音转写 ----------
+const AUDIO_RE = /\.(mp3|wav|m4a|flac|ogg|aac)$/i;
+async function loadMidi(file) {
+  if (AUDIO_RE.test(file.name)) return transcribeAudio(file);
+  if (!/\.midi?$/i.test(file.name)) return toast("请选择 .mid 文件，或钢琴录音（mp3、wav）", true);
+  pause();
+  $("#piece").textContent = "正在解析并合成试听音频…";
+  try {
+    applyMidi(await upload("midi", file));
+  } catch (e) {
+    $("#piece").textContent = "尚未导入曲目";
+    toast(e.message, true);
+  }
+}
+async function transcribeAudio(file) {
+  pause();
+  $("#piece").textContent = "正在上传录音…";
+  try {
+    const up = await upload("audio", file);
+    const { id } = await post("/api/transcribe", { path: up.path });
+    toast("开始把录音转成 MIDI。第一次使用会先下载约 170MB 的模型");
+    pollTranscribe(id);
+  } catch (e) { $("#piece").textContent = "尚未导入曲目"; toast(e.message, true); }
+}
+async function pollTranscribe(id) {
+  let job;
+  try { job = await api("/api/jobs/" + id); } catch (e) { return setTimeout(() => pollTranscribe(id), 2000); }
+  const p = job.progress ? ` ${Math.round(job.progress * 100)}%` : "";
+  $("#piece").textContent = (job.message || "转写中") + p;
+  if (job.status === "done" && job.result) {
+    applyMidi(job.result); loadSongs();
+    return toast("转写完成，已放进曲库。听一下有没有错音，必要时可以换一段更干净的录音");
+  }
+  if (job.status === "failed") { $("#piece").textContent = "转写失败"; return toast(job.error || job.message || "转写失败", true); }
+  setTimeout(() => pollTranscribe(id), 1500);
+}
+function applyMidi(res) {
+  {
+    state.midi = { path: res.path, name: res.name, stem: res.name.replace(/\.midi?$/i, "") };
+    state.keyAuto = false;
+    state.notes = res.notes; state.duration = res.duration; state.low = res.low; state.high = res.high;
+    layoutCache = null; state.intro = null; state.t = -LOOK;
+    piano.src = res.audio; piano.load();
+    $("#stage").classList.add("loaded");
+    $("#piece").innerHTML = `<b></b> ${res.count} 个音，${fmt(res.duration)}`;
+    $("#piece b").textContent = state.midi.stem;
+    if (!$("#title").value.trim()) $("#title").placeholder = state.midi.stem;
+    const scrub = $("#scrub"); scrub.min = -LOOK; scrub.max = res.duration + 1; scrub.disabled = false;
+    ["#play", "#previewRender", "#fullRender"].forEach((s) => ($(s).disabled = false));
+    $("#introPreview").disabled = false;
+    toast(`已导入 ${state.midi.stem}，按空格键试听`);
+  }
+}
+$("#midiInput").addEventListener("change", (e) => e.target.files[0] && loadMidi(e.target.files[0]));
+
+// ---------- 曲库 ----------
+async function loadSongs() {
+  let songs;
+  try { songs = await api("/api/songs"); } catch (e) { return; }
+  const sel = $("#songLib");
+  sel.innerHTML = '<option value="">从曲库载入…</option>';
+  songs.forEach((s) => {
+    const o = document.createElement("option");
+    o.value = s.file; o.textContent = s.subtitle ? `${s.title} — ${s.subtitle}` : s.title;
+    sel.appendChild(o);
+  });
+}
+function setField(id, v) { if (v != null && v !== "") $("#" + id).value = v; }
+$("#songLib").addEventListener("change", async (e) => {
+  const file = e.target.value;
+  if (!file) return;
+  pause();
+  $("#piece").textContent = "正在载入曲库里的曲子…";
+  try {
+    const res = await post("/api/songs/load", { file });
+    state.session = res.session;
+    const m = res.meta || {};
+    setField("title", m.title); setField("subtitle", m.subtitle); setField("watermark", m.watermark);
+    setField("douyinTitle", m.douyin_title); setField("tags", m.tags); setField("description", m.description);
+    setField("introArtist", m.intro_artist); setField("introTitle", m.intro_title);
+    $("#rightName").textContent = $("#introArtist").value.trim() || "联动对象";
+    if (m.intro_cover) {
+      state.cover = m.intro_cover;
+      $("#coverLabel").style.backgroundImage = `url("${m.intro_cover.url}")`; $("#coverLabel").textContent = "";
+    }
+    if (m.intro && introEnabled) { document.querySelector("input[name=intro][value=on]").checked = true; setIntroUI(); }
+    applyMidi(res);
+    state.keyAuto = m.key_range === "auto"; layoutCache = null;
+  } catch (err) { $("#piece").textContent = "尚未导入曲目"; toast(err.message, true); }
+  e.target.value = "";
+});
+loadSongs();
+const drop = $("#drop");
+["dragenter", "dragover"].forEach((ev) => document.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach((ev) => document.addEventListener(ev, (e) => { e.preventDefault(); if (ev === "drop" || !e.relatedTarget) drop.classList.remove("over"); }));
+document.addEventListener("drop", (e) => {
+  const f = e.dataTransfer.files[0];
+  if (!f) return;
+  const onStage = e.target.closest && e.target.closest(".stage-shell");
+  if (/\.midi?$/i.test(f.name)) loadMidi(f);
+  else if (AUDIO_RE.test(f.name) && onStage) transcribeAudio(f);   // 拖到舞台上的录音：转写成 MIDI
+  else if (f.type.startsWith("image/") || f.type.startsWith("video/")) setBackground(f);
+  else if (f.type.startsWith("audio/")) setBgm(f);                 // 拖到其他地方的音频：当背景音
+  else toast("不认识这个文件：" + f.name, true);
+});
+
+// ---------- 背景与背景音 ----------
+async function setBackground(file) {
+  try {
+    const res = await upload("background", file);
+    const kind = file.type.startsWith("video/") ? "video" : "image";
+    state.bg = { ...res, kind };
+    $("#bgName").textContent = res.name; $("#bgClear").hidden = false;
+    if (kind === "video") {
+      const v = $("#bgVideo"); v.src = res.url; v.load(); if (state.playing) v.play();
+      $("#bgThumb").style.backgroundImage = ""; $("#bgThumb").textContent = "▶";
+    } else {
+      state.bgImg = new Image(); state.bgImg.src = res.url;
+      $("#bgThumb").style.backgroundImage = `url("${res.url}")`; $("#bgThumb").textContent = "";
+    }
+  } catch (e) { toast(e.message, true); }
+}
+$("#bgInput").addEventListener("change", (e) => e.target.files[0] && setBackground(e.target.files[0]));
+$("#bgClear").addEventListener("click", () => {
+  state.bg = null; state.bgImg = null; $("#bgVideo").removeAttribute("src");
+  $("#bgName").textContent = "默认深色渐变"; $("#bgThumb").style.backgroundImage = ""; $("#bgThumb").textContent = "bg";
+  $("#bgClear").hidden = true;
+});
+
+async function setBgm(file) {
+  try {
+    const res = await upload("bgm", file);
+    state.bgm = res; bgmAudio.src = res.url; bgmAudio.volume = +$("#bgmVol").value;
+    if (state.playing) bgmAudio.play();
+    $("#bgmName").textContent = res.name; $("#bgmClear").hidden = false;
+  } catch (e) { toast(e.message, true); }
+}
+$("#bgmInput").addEventListener("change", (e) => e.target.files[0] && setBgm(e.target.files[0]));
+$("#bgmClear").addEventListener("click", () => {
+  state.bgm = null; bgmAudio.pause(); bgmAudio.removeAttribute("src");
+  $("#bgmName").textContent = "不加背景音"; $("#bgmClear").hidden = true;
+});
+
+// ---------- 开头 ----------
+let introEnabled = true;   // 由 piano/config.yaml 的 intro.enabled 决定
+function introOn() { return introEnabled && document.querySelector("input[name=intro]:checked").value === "on"; }
+function setIntroUI() {
+  const on = introOn();
+  $("#introMovement").classList.toggle("off", !on);
+  $("#duo").classList.toggle("intro-on", on);
+  try { localStorage.setItem("qinfang.intro", on ? "on" : "off"); } catch (e) { /* 忽略 */ }
+}
+try {
+  if (localStorage.getItem("qinfang.intro") === "on") document.querySelector("input[name=intro][value=on]").checked = true;
+} catch (e) { /* 忽略 */ }
+document.querySelectorAll("input[name=intro]").forEach((r) => r.addEventListener("change", setIntroUI));
+setIntroUI();
+api("/api/intro").then((d) => {
+  introEnabled = d.enabled !== false;
+  $("#introMovement").hidden = !introEnabled;   // 开头功能关闭：整节隐藏
+  if (d.avatar) { $("#avatarLabel").style.backgroundImage = `url("${d.avatar}")`; $("#avatarLabel").textContent = ""; }
+  $("#leftName").textContent = d.left_name;
+}).catch(() => {});
+$("#avatarInput").addEventListener("change", async (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const res = await upload("avatar", f);
+    $("#avatarLabel").style.backgroundImage = `url("${res.url}")`; $("#avatarLabel").textContent = "";
+    toast("头像已更换，以后的开头都会用这张");
+  } catch (err) { toast(err.message, true); }
+});
+$("#coverInput").addEventListener("change", async (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    state.cover = await upload("cover", f);
+    $("#coverLabel").style.backgroundImage = `url("${state.cover.url}")`; $("#coverLabel").textContent = "";
+    if (introEnabled && !introOn()) { document.querySelector("input[name=intro][value=on]").checked = true; setIntroUI(); }
+  } catch (err) { toast(err.message, true); }
+});
+$("#introArtist").addEventListener("input", (e) => ($("#rightName").textContent = e.target.value.trim() || "联动对象"));
+$("#introPreview").addEventListener("click", () => render(true, true));
+
+function pct(el, out) { out.textContent = Math.round(el.value * 100) + "%"; }
+$("#bgDim").addEventListener("input", (e) => { pct(e.target, $("#bgDimOut")); remember(); });
+$("#bgmVol").addEventListener("input", (e) => { pct(e.target, $("#bgmVolOut")); bgmAudio.volume = +e.target.value; remember(); });
+pct($("#bgDim"), $("#bgDimOut")); pct($("#bgmVol"), $("#bgmVolOut"));
+["#watermark", "#tags"].forEach((s) => $(s).addEventListener("change", remember));
+document.querySelectorAll("input[name=fps]").forEach((r) => r.addEventListener("change", remember));
+document.querySelectorAll("input[name=orient]").forEach((r) => r.addEventListener("change", (e) => {
+  state.vertical = e.target.value === "v"; layoutCache = null;
+  $("#stage").classList.toggle("vertical", state.vertical);
+}));
+
+// ---------- 出片 ----------
+const STAGES = { queued: "排队中", start: "准备中", audio: "合成钢琴声", intro: "生成开头", frames: "绘制画面", compose: "合成成片", draft: "生成剪映草稿", done: "完成", error: "出错了" };
+function overall(job) {
+  const p = job.progress || 0;
+  switch (job.stage) {
+    case "start": return 0.02;
+    case "audio": return 0.06;
+    case "intro": return 0.08;
+    case "frames": return 0.08 + p * 0.77;
+    case "compose": return 0.88;
+    case "draft": return 0.97;
+    case "done": return 1;
+    default: return 0;
+  }
+}
+let current = null;
+async function render(preview, introOnly = false) {
+  if (!state.midi) return;
+  if ((introOn() || introOnly) && !state.cover) return toast("加开头需要先上传曲子封面（V 开头里右边的唱片）", true);
+  pause();
+  const opts = {
+    intro: introOn() || introOnly,
+    intro_only: introOnly,
+    intro_cover: state.cover ? state.cover.path : "",
+    intro_artist: $("#introArtist").value.trim(),
+    intro_title: $("#introTitle").value.trim(),
+    midi: state.midi.path,
+    title: $("#title").value.trim() || state.midi.stem,
+    subtitle: $("#subtitle").value.trim(),
+    watermark: $("#watermark").value.trim(),
+    background: state.bg ? state.bg.path : "",
+    bg_dim: $("#bgDim").value,
+    bgm: state.bgm ? state.bgm.path : "",
+    bgm_volume: $("#bgmVol").value,
+    vertical: state.vertical,
+    fps: document.querySelector("input[name=fps]:checked").value,
+    douyin_title: $("#douyinTitle").value.trim(),
+    tags: $("#tags").value.trim(),
+    description: $("#description").value.trim(),
+    preview: preview ? 15 : null,
+  };
+  remember();
+  try {
+    const { id } = await post("/api/render", opts);
+    current = { id, preview: preview || introOnly, introOnly };
+    $("#meter").classList.add("on"); $("#meter").classList.remove("failed");
+    $("#result").classList.remove("on"); $("#log").hidden = true;
+    ["#previewRender", "#fullRender", "#introPreview"].forEach((s) => ($(s).disabled = true));
+    poll(id);
+  } catch (e) { toast(e.message, true); }
+}
+async function poll(id) {
+  let job;
+  try { job = await api("/api/jobs/" + id); } catch (e) { toast(e.message, true); return setTimeout(() => poll(id), 2000); }
+  const f = overall(job);
+  $("#fill").style.width = (f * 100).toFixed(1) + "%";
+  $("#pctText").textContent = Math.round(f * 100) + "%";
+  $("#stageText").textContent = job.status === "failed" ? "渲染失败" : (STAGES[job.stage] || job.message);
+  if (job.status === "done") return finished(job);
+  if (job.status === "failed") {
+    $("#meter").classList.add("failed");
+    $("#log").textContent = job.log || job.message; $("#log").hidden = false;
+    ["#previewRender", "#fullRender", "#introPreview"].forEach((s) => ($(s).disabled = false));
+    return toast("渲染失败，日志在出片面板里", true);
+  }
+  setTimeout(() => poll(id), 700);
+}
+async function finished(job) {
+  const r = job.result;
+  ["#previewRender", "#fullRender"].forEach((s) => ($(s).disabled = false));
+  $("#result").classList.add("on");
+  const v = $("#resultVideo"); v.src = r.video_url; v.poster = r.cover_url;
+  $("#openResult").dataset.path = r.folder;
+  $("#copyResult").hidden = current.preview;
+  $("#where").textContent = current.preview
+    ? `${current.introOnly ? "开头预览" : "试渲染"}不进待上传，用时 ${r.seconds} 秒`
+    : `已保存到 ${r.folder}，用时 ${r.seconds} 秒${r.draft ? "；剪映草稿已同步" : ""}`;
+  toast(current.introOnly ? "开头预览完成" : current.preview ? "试渲染完成" : "视频已保存到待上传");
+  if (!current.preview) {
+    await loadShelf();
+    const item = shelfItems.find((x) => x.folder === r.folder);
+    $("#copyResult").dataset.text = item ? publishText(item.publish) : "";
+  }
+}
+$("#previewRender").addEventListener("click", () => render(true));
+$("#fullRender").addEventListener("click", () => render(false));
+
+// ---------- 待上传 ----------
+let shelfItems = [];
+function publishText(md) {
+  const title = (md.match(/\*\*标题\*\*：(.+)/) || [])[1] || "";
+  const body = (md.match(/\*\*文案\*\*：(.+)/) || [])[1] || "";
+  return [title.trim(), body.trim()].filter(Boolean).join("\n");
+}
+async function copy(text) {
+  try { await navigator.clipboard.writeText(text); toast("发布文案已复制"); }
+  catch (e) { toast("复制失败，请手动打开 publish.md", true); }
+}
+async function loadShelf() {
+  try { shelfItems = await api("/api/library"); } catch (e) { return toast(e.message, true); }
+  $("#shelfCount").textContent = shelfItems.length;
+  const box = $("#records"); box.innerHTML = "";
+  if (!shelfItems.length) {
+    box.innerHTML = '<p class="empty">还没有成片。导入 MIDI 后点「生成视频」，成片会出现在这里。</p>';
+    if (!tour.polling) fillTourSelect();
+    return;
+  }
+  shelfItems.forEach((it) => {
+    const b = document.createElement("button");
+    b.className = "record"; b.type = "button";
+    b.innerHTML = `<div class="sleeve"></div><b></b><small></small>`;
+    if (it.cover) b.querySelector(".sleeve").style.backgroundImage = `url("${it.cover}")`;
+    b.querySelector("b").textContent = it.title;
+    b.querySelector("small").textContent = `${it.time}，${it.size_mb} MB`;
+    b.addEventListener("click", () => openViewer(it));
+    box.appendChild(b);
+  });
+  if (!tour.polling) fillTourSelect();
+}
+function openViewer(it) {
+  $("#viewerTitle").textContent = it.title;
+  $("#viewerVideo").src = it.video; $("#viewerVideo").poster = it.cover || "";
+  $("#viewerOpen").dataset.path = it.folder;
+  $("#viewerCopy").dataset.text = publishText(it.publish);
+  $("#viewer").showModal();
+}
+function closeViewer() { $("#viewerVideo").pause(); $("#viewer").close(); }
+$("#viewerClose").addEventListener("click", closeViewer);
+$("#viewer").addEventListener("close", () => $("#viewerVideo").pause());
+$("#viewer").addEventListener("click", (e) => { if (e.target === $("#viewer")) closeViewer(); });
+
+async function openPath(path) { try { await post("/api/open", { path }); } catch (e) { toast(e.message, true); } }
+$("#openResult").addEventListener("click", (e) => openPath(e.currentTarget.dataset.path));
+$("#viewerOpen").addEventListener("click", (e) => openPath(e.currentTarget.dataset.path));
+$("#copyResult").addEventListener("click", (e) => copy(e.currentTarget.dataset.text || ""));
+$("#viewerCopy").addEventListener("click", (e) => copy(e.currentTarget.dataset.text || ""));
+$("#openDeliver").addEventListener("click", async () => {
+  try { await post("/api/open-deliver", {}); } catch (e) { toast(e.message, true); }
+});
+$("#openJianying").addEventListener("click", async () => {
+  try { await post("/api/open-jianying", {}); toast("正在打开剪映"); } catch (e) { toast(e.message, true); }
+});
+$("#goShelf").addEventListener("click", () => $("#shelf").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" }));
+$("#refreshShelf").addEventListener("click", loadShelf);
+loadShelf();
+
+// ---------- 发布台 ----------
+const PILL = { queued: "等待中", open: "打开中", login: "请扫码登录", uploading: "上传中", ready: "已填好", error: "出错" };
+const tour = { folder: null, defaults: null, polling: false };
+function tourPrefs() {
+  try { return JSON.parse(localStorage.getItem("qinfang.tour")) || ["douyin", "xiaohongshu", "bilibili"]; }
+  catch (e) { return ["douyin", "xiaohongshu", "bilibili"]; }
+}
+function saveTourPrefs() {
+  const keys = [...document.querySelectorAll(".act.on")].map((r) => r.dataset.key);
+  try { localStorage.setItem("qinfang.tour", JSON.stringify(keys)); } catch (e) { /* 忽略 */ }
+  $("#tourStart").disabled = !keys.length || tour.polling;
+}
+function fillTourSelect() {
+  const sel = $("#tourVideo"), prev = tour.folder;
+  sel.innerHTML = "";
+  if (!shelfItems.length) {
+    sel.innerHTML = '<option value="">还没有成片，先在上面生成一条</option>';
+    $("#program").innerHTML = ""; $("#tourStart").disabled = true; $("#tourMeta").textContent = "";
+    return;
+  }
+  shelfItems.forEach((it) => {
+    const o = document.createElement("option");
+    o.value = it.folder; o.textContent = `${it.title}（${it.time}）`;
+    sel.appendChild(o);
+  });
+  sel.value = shelfItems.some((i) => i.folder === prev) ? prev : shelfItems[0].folder;
+  selectTour(sel.value);
+}
+const splitTags = (s) => s.split(/[,，\s]+/).map((t) => t.replace(/^#/, "")).filter(Boolean);
+async function selectTour(folder) {
+  tour.folder = folder;
+  const it = shelfItems.find((i) => i.folder === folder);
+  $("#tourCover").style.backgroundImage = it && it.cover ? `url("${it.cover}")` : "";
+  let d;
+  try { d = tour.defaults = await api("/api/publish/defaults?folder=" + encodeURIComponent(folder)); }
+  catch (e) { return toast(e.message, true); }
+  $("#tourMeta").textContent = d.has_vertical ? "竖屏版已生成，抖音、小红书、视频号、快手会用竖屏版"
+    : d.has_job ? "抖音、小红书、视频号、快手需要竖屏版，开始发布时会先自动生成（多花几分钟）"
+    : "这条成片缺少生成参数，竖屏平台会直接使用横屏版";
+  const chosen = tourPrefs(), box = $("#program");
+  box.innerHTML = "";
+  d.platforms.forEach((p) => {
+    const row = document.createElement("div");
+    row.className = "act" + (chosen.includes(p.key) ? " on" : "");
+    row.dataset.key = p.key;
+    row.innerHTML = `
+      <label class="act-name"><input type="checkbox"><span><b></b><small></small></span></label>
+      <div class="act-fields">
+        ${p.title_max ? '<label class="field"><span>标题<em data-c="title"></em></span><input type="text" data-f="title"></label>' : ""}
+        <label class="field"><span>文案<em data-c="desc"></em></span><textarea data-f="desc"></textarea></label>
+        <label class="field"><span>话题<em data-c="tags"></em></span><input type="text" data-f="tags"></label>
+        <div class="act-note"></div>
+      </div>
+      <div class="act-state"><span class="pill">未开始</span><div class="detail"></div></div>`;
+    row.querySelector("b").textContent = p.name;
+    row.querySelector("small").textContent = p.vertical ? "竖屏版" : "横屏版";
+    row.querySelector(".act-note").textContent = p.note;
+    const cb = row.querySelector("input[type=checkbox]");
+    cb.checked = chosen.includes(p.key);
+    cb.addEventListener("change", () => { row.classList.toggle("on", cb.checked); saveTourPrefs(); });
+    const f = (n) => row.querySelector(`[data-f="${n}"]`), c = (n) => row.querySelector(`[data-c="${n}"]`);
+    if (f("title")) f("title").value = p.title;
+    f("desc").value = p.desc; f("tags").value = p.tags.join(" ");
+    const count = () => {
+      if (f("title")) {
+        const n = [...f("title").value].length;
+        c("title").textContent = `${n}/${p.title_max}`;
+        c("title").classList.toggle("over", n > p.title_max || (p.title_min && n < p.title_min));
+      }
+      const dn = [...f("desc").value].length;
+      c("desc").textContent = `${dn}/${p.desc_max}`; c("desc").classList.toggle("over", dn > p.desc_max);
+      const tn = splitTags(f("tags").value).length;
+      c("tags").textContent = `${tn}/${p.tag_max}`; c("tags").classList.toggle("over", tn > p.tag_max);
+    };
+    row.querySelectorAll("[data-f]").forEach((el) => el.addEventListener("input", count));
+    count();
+    row._spec = p;
+    box.appendChild(row);
+  });
+  saveTourPrefs();
+}
+$("#tourVideo").addEventListener("change", (e) => selectTour(e.target.value));
+
+async function startTour() {
+  const platforms = {};
+  for (const row of document.querySelectorAll(".act.on")) {
+    const p = row._spec, f = (n) => row.querySelector(`[data-f="${n}"]`);
+    const title = f("title") ? f("title").value.trim() : "";
+    if (p.title_max && [...title].length > p.title_max) return toast(`${p.name}的标题超过 ${p.title_max} 字，请缩短`, true);
+    if (p.title_min && title && [...title].length < p.title_min) return toast(`${p.name}的标题至少 ${p.title_min} 字`, true);
+    platforms[p.key] = { title, desc: f("desc").value.trim(), tags: splitTags(f("tags").value).slice(0, p.tag_max),
+                         ai_declare: document.querySelector("input[name=tourDeclare]:checked").value === "ai" };
+  }
+  try {
+    const orientation = document.querySelector("input[name=tourOrient]:checked").value;
+    const { id } = await post("/api/publish", { folder: tour.folder, platforms, orientation });
+    tour.polling = true; $("#tourStart").disabled = true; $("#tourVideo").disabled = true;
+    document.querySelectorAll(".act.on .pill").forEach((el) => { el.className = "pill"; el.textContent = "等待中"; });
+    toast("正在打开发布窗口");
+    pollTour(id);
+  } catch (e) { toast(e.message, true); }
+}
+async function pollTour(id) {
+  let job;
+  try { job = await api("/api/jobs/" + id); } catch (e) { return setTimeout(() => pollTour(id), 2000); }
+  for (const [key, st] of Object.entries(job.platforms || {})) {
+    const row = document.querySelector(`.act[data-key="${key}"]`);
+    if (!row) continue;
+    const pill = row.querySelector(".pill"), det = row.querySelector(".detail");
+    pill.className = "pill " + (st.state || ""); pill.textContent = PILL[st.state] || st.state;
+    det.textContent = st.msg || "";
+    if (st.missing && st.missing.length) {
+      const m = document.createElement("div"); m.className = "miss";
+      m.textContent = "需要手动填写：" + st.missing.join("、"); det.appendChild(m);
+    }
+  }
+  if (job.stage === "vertical") $("#tourHint").textContent = `${job.message} ${Math.round((job.progress || 0) * 100)}%`;
+  else if (job.stage === "waiting") $("#tourHint").textContent = job.message;
+  if (job.status === "done" || job.status === "failed") {
+    tour.polling = false; $("#tourVideo").disabled = false; saveTourPrefs();
+    if (job.status === "failed") { $("#tourHint").textContent = job.error || "发布失败"; toast(job.error || "发布失败", true); }
+    else { $("#tourHint").textContent = "发布窗口已关闭。记得到各平台确认作品状态。"; toast("发布窗口已关闭"); }
+    return;
+  }
+  setTimeout(() => pollTour(id), 1200);
+}
+$("#tourStart").addEventListener("click", startTour);
+$("#goTour").addEventListener("click", () => $("#tour").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" }));
+$("#viewerPublish").addEventListener("click", () => {
+  const folder = $("#viewerOpen").dataset.path;
+  closeViewer();
+  if (VIEW === "studio") return parent.postMessage({ nav: "tour", folder }, "*");   // 软件里：切到发布台页
+  $("#tourVideo").value = folder; selectTour(folder);
+  $("#tour").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
+});
+
+// 软件外壳发来的消息：页面被切走时暂停试听；切回来刷新成片列表；发布台选中指定成片
+window.addEventListener("message", async (e) => {
+  if (e.origin !== location.origin || !e.data) return;
+  if (e.data.hidden || e.data.shown) window.shellHidden = !!e.data.hidden;
+  if (e.data.hidden && state.playing) pause();
+  if (e.data.shown && !tour.polling) loadShelf();
+  if (e.data.tourFolder && !tour.polling) {
+    await loadShelf();
+    if (shelfItems.some((i) => i.folder === e.data.tourFolder)) { $("#tourVideo").value = e.data.tourFolder; selectTour(e.data.tourFolder); }
+  }
+});
+
+// 服务端代码更新后提醒重启（旧版服务没有这个接口，同样视为需要重启）
+async function checkHealth() {
+  try {
+    const h = await api("/api/health");
+    if (h.stale) toast(h.message, true);
+    return !h.stale;
+  } catch (e) {
+    toast("琴房的程序已更新，请关闭黑色命令行窗口，再双击「启动琴房.bat」重启", true);
+    return false;
+  }
+}
+checkHealth();
+window.addEventListener("focus", checkHealth);
+})();
+</script>
+<!-- 生成按钮旁的「文件包」：钢琴成片生成完会跳进去，悬停看最近的视频（web/ui/filebag.js） -->
+<script src="/ui/filebag.js"></script>
+<script>window.FileBag.attach("#fullRender", { kinds: ["render"] });</script>
+<!-- 生成进度卡（水位 = 进度，音符环绕；web/ui/waterprogress.js） -->
+<script src="/ui/waterprogress.js"></script>
+<script>window.WaterProgress.attach({ meter: "#meter", pct: "#pctText", stage: "#stageText" });</script>
+<!-- 文字操作按钮换成简化图标（web/ui/iconize.js） -->
+<script src="/ui/iconize.js"></script>
+<script>window.Iconize.apply([{ sel: ".mast-actions a[href=\"/flick\"]", icon: "flick", nav: "flick" }, { sel: "#goShelf", icon: "shelf", label: "待上传的成片" }, { sel: "#goTour", icon: "send" }, { sel: "#openDeliver", icon: "folder", label: "打开视频文件夹" }, { sel: "#openJianying", icon: "jianying" }, { sel: "#openResult", icon: "folder" }, { sel: "#copyResult", icon: "copy" }, { sel: "#viewerOpen", icon: "folder" }, { sel: "#viewerCopy", icon: "copy" }]);</script>
+<!-- 出片区（生成视频 / 试渲染）的样式 -->
+<link rel="stylesheet" href="/ui/studio-press.css">
+</body>
+</html>

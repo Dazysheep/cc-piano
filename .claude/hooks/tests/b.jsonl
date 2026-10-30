@@ -1,0 +1,3 @@
+{"type":"user","message":{"role":"user","content":"改一下 app.js"}}
+{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Edit","input":{"file_path":"first/app.js"}}]}}
+{"type":"assistant","message":{"content":[{"type":"text","text":"已完成修改。"}]}}

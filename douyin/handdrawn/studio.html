@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>手绘工作室</title>
+<!-- douyin 手绘工作室：底座是 JohnHeibel/PDoomVideo（p5.js + p5.brush），见 engine/ANIMATION_GUIDE_原版.md。
+     网址参数：?scene=<名字>&song=<歌曲文件夹>&render（渲染时不显示拖动条）。尺寸 / 透明 / 节拍由场景登记时决定，render.mjs 会带上。 -->
+<style>
+  @font-face { font-family: 'ZCOOL KuaiLe'; src: url('fonts/ZCOOLKuaiLe-Regular.ttf'); }   /* 歌词字幕手写体（OFL，fonts/OFL.txt） */
+  html, body { margin: 0; background: #1b1820; color: #eee; font: 13px system-ui, sans-serif; }
+  main { padding: 12px; display: grid; gap: 8px; }
+  #out { max-width: 100%; height: auto; background: repeating-conic-gradient(#ccc 0 25%, #eee 0 50%) 0 0 / 20px 20px; }
+  .p5Canvas { display: none !important; }
+  .bar { display: flex; gap: 10px; align-items: center; }
+  #scrub { flex: 1; }
+</style>
+<script src="node_modules/p5/lib/p5.min.js"></script>
+<script src="node_modules/p5.brush/dist/p5.brush.js"></script>
+</head>
+<body>
+<main>
+  <canvas id="out"></canvas>
+  <div class="bar"><select id="pick"></select><input id="scrub" type="range" min="0" max="10" step="0.0417" value="0"><span id="tt">loading…</span></div>
+</main>
+<script>
+// 场景登记：scene(name, { w, h, dur, alpha, zh }, fn)；fn(t) 画整帧，必须是 t 的纯函数（帧会并行、乱序渲染）
+const SCENES = {};
+function scene(name, o, fn) { SCENES[name] = { ...o, fn }; }
+const SONG = new URLSearchParams(location.search).get('song');
+</script>
+<script>
+  // 先按场景定好画布尺寸再加载引擎（core.js 从网址读 w/h/alpha）
+  (function () {
+    const q = new URLSearchParams(location.search);
+    if (!q.has('w') && q.has('scene')) {
+      // 浏览模式：没带尺寸时先用默认值，选场景后带上尺寸重开
+    }
+    document.getElementById('out').width = +(q.get('w') || 1920);
+    document.getElementById('out').height = +(q.get('h') || 1080);
+  })();
+</script>
+<script src="engine/core.js"></script>
+<script src="engine/clawd.js"></script>
+<script src="library/expressions.js"></script>
+<script>
+  if (SONG) for (const f of ['scenes.js', 'film_data.js', 'film.js'])      // film_data.js / film.js 可选：整首歌的全片
+    document.write(`<script src="songs/${encodeURIComponent(SONG)}/${f}" onerror="this.remove()"><\/script>`);
+</script>
+<script>
+const NAME = Q.get('scene');
+function drawWorld(t) {
+  const s = SCENES[NAME];
+  if (!s) { letter('没有这个场景：' + NAME, W / 2, H / 2, 40, PAL.ink, { ink: false }); flushLetters(); return; }
+  s.fn(t); CAM = null; flushLetters();
+}
+function drawKaraokeText() {}
+window.sceneList = () => Object.fromEntries(Object.entries(SCENES).map(([k, v]) => [k, { w: v.w, h: v.h, dur: v.dur, alpha: !!v.alpha, zh: v.zh || '', bpm: v.bpm, off: v.off }]));
+function devUI() {
+  const pick = document.getElementById('pick'), s = document.getElementById('scrub'), lab = document.getElementById('tt');
+  for (const k of Object.keys(SCENES)) { const op = document.createElement('option'); op.value = op.textContent = k; pick.appendChild(op); }
+  pick.value = NAME || '';
+  pick.onchange = () => { const v = SCENES[pick.value], q = new URLSearchParams(location.search);
+    q.set('scene', pick.value); q.set('w', v.w); q.set('h', v.h); q.set('dur', v.dur); v.alpha ? q.set('alpha', 1) : q.delete('alpha'); location.search = q; };
+  s.max = DUR;
+  let busy = false, want = null;
+  const go = async () => { if (busy) return; busy = true; while (want != null) { const t = want; want = null; const t0 = performance.now(); await window.renderAt(t); lab.textContent = `${t.toFixed(2)}s · ${Math.round(performance.now() - t0)} ms/帧`; } busy = false; };
+  s.addEventListener('input', () => { want = +s.value; go(); });
+  want = 0; go();
+}
+</script>
+</body>
+</html>
