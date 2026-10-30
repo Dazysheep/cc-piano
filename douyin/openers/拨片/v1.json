@@ -1,0 +1,13 @@
+{
+ "engine": "flick",
+ "zh": "拨片",
+ "note": "专辑卡片一张张向下滑过，停在主图上（原来的「拨片开头」）",
+ "params": {
+  "images": [],
+  "final": "",
+  "seconds": 4.0,
+  "vertical": false,
+  "text": true
+ },
+ "time": "2026-10-30T23:15:12"
+}

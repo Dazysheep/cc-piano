@@ -118,10 +118,10 @@ const ST = window.StudioSettings;
 const TEXT = {
   en: { title: "cc-piano", tag: "Let every song be seen", enter: "Enter Studio", hint: "TAP THE KEYS TO PLAY", nav: "Open a workspace",
         soundOn: "Sound on", soundOff: "Sound off",
-        cards: { studio: "Piano", tracks: "Tracks", flick: "Flick Intro", edit: "Edit", tour: "Publish", works: "Works" } },
+        cards: { studio: "Piano", tracks: "Tracks", flick: "Opening Design", edit: "Edit", tour: "Publish", works: "Works" } },
   zh: { title: "cc-piano", tag: "让每一首歌，被看见", enter: "进入工作台", hint: "点击琴键弹奏", nav: "进入工作台的页面",
         soundOn: "声音开", soundOff: "声音关",
-        cards: { studio: "琴房", tracks: "音轨剪辑", flick: "拨片开头", edit: "剪辑", tour: "发布台", works: "作品集" } },
+        cards: { studio: "琴房", tracks: "音轨剪辑", flick: "开头设计", edit: "剪辑", tour: "发布台", works: "作品集" } },
 };
 function applyText() {
   const s = ST.get(), lang = TEXT[s.landingLang] ? s.landingLang : "en", T = TEXT[lang];

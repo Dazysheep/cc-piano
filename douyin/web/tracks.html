@@ -150,7 +150,7 @@ select { padding: 8px 12px; border-radius: 10px; border: 1px solid var(--glass-l
 <body>
 <div class="wrap">
   <header>
-    <h1>音轨剪辑<small>编曲软件风格的多轨时间线 · 拨片开头 + 6 轨分离 + AI 歌词 · 三套主题</small></h1>
+    <h1>音轨剪辑<small>编曲软件风格的多轨时间线 · 开头设计 + 6 轨分离 + AI 歌词 · 三套主题</small></h1>
     <div class="pick">
       <select id="songSel" aria-label="歌曲设置"></select>
       <button class="btn" id="newSong" type="button">新建</button>
@@ -206,7 +206,7 @@ select { padding: 8px 12px; border-radius: 10px; border: 1px solid var(--glass-l
       <section class="card">
         <h3><i>III</i>开头封面</h3>
         <div class="covers" id="covers"></div>
-        <div class="hint">来自「拨片开头」图库；★ 是开头最后停留的主图，也用作背景虚化和标题栏小图。</div>
+        <div class="hint">来自「开头设计」的专辑库（拨片图库）；★ 是开头最后停留的主图，也用作背景虚化和标题栏小图。</div>
       </section>
     </div>
 
@@ -496,7 +496,7 @@ async function loadCovers() {
     });
     box.appendChild(b);
   });
-  if (!S.lib.items.length) box.innerHTML = '<div class="hint">图库是空的，先到「拨片开头」页面导入封面。</div>';
+  if (!S.lib.items.length) box.innerHTML = '<div class="hint">图库是空的，先到「开头设计」页面导入封面。</div>';
 }
 
 async function loadSongs(select) {

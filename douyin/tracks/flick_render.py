@@ -1,7 +1,7 @@
 """用图库一键生成拨片开头：视频（带滑动音效）+ 封面 + 单独的音效 wav + 剪映草稿（开头 + 音效分轨）。
 
 用法: python tracks/flick_render.py [--title 歌名 --artist 歌手] [--seconds 4] [--vertical] [--no-draft]
-输出：<成片位置>/开头_<日期>_<标题>/intro.mp4、intro.jpg、intro_sfx.wav；剪映草稿「拨片开头_<标题>_<时间>」
+输出：<成片位置>/开头_<日期>_<标题>/intro.mp4、intro.jpg、intro_sfx.wav；剪映草稿「开头_<标题>_<时间>」
      （成片位置见 piano/storage.py：默认 D 盘 cc-engine/douyin/待上传，可在设置里改）
 """
 import argparse
@@ -87,9 +87,20 @@ def main() -> int:
     silent.unlink()
     result = {"video": str(out), "cover": str(out.with_suffix(".jpg")), "sfx": str(sfx_wav), "folder": str(dest),
               "draft": None}
+    (dest / "job.json").write_text(json.dumps({"kind": "intro", "title": a.title or "开头", "artist": a.artist, "template": "拨片",
+                                               "engine": "flick"}, ensure_ascii=False, indent=1), encoding="utf-8")
+    try:                                   # 剪辑页用的分层工程（背景 / 每张专辑卡片 / 歌名 / 音效，2026-10-30 开头设计）；失败不影响成片
+        emit("draft", "正在生成分层剪辑工程", 0.97)
+        sys.path.insert(0, str(HERE / "openers"))
+        import flick_layers
+        names = {it["file"]: it["name"] for it in flick_lib.load()["items"]}
+        result["project"] = str(flick_layers.render_layers(final, others, dest, w, h, 30, a.seconds, a.title, a.artist,
+                                                           [names.get(p.name, "") for p in [*others, final]], sfx_wav))
+    except Exception as e:
+        print(f"分层工程没生成：{e}", flush=True)
     if not a.no_draft:
         emit("draft", "正在生成剪映草稿", 0.98)
-        result["draft"] = str(make_draft(out, sfx_wav, w, h, f"拨片开头_{slug}_{datetime.now():%m%d_%H%M}"))
+        result["draft"] = str(make_draft(out, sfx_wav, w, h, f"开头_{slug}_{datetime.now():%m%d_%H%M}"))
     emit("done", "开头已生成", 1, result=result)
     return 0
 

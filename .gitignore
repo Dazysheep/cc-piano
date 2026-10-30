@@ -41,7 +41,9 @@ Desktop.ini
 
 # --- 大型工具和二进制（用户自行安装） ---
 douyin/tools/
-douyin/editor/
+# OpenFilm 剪辑器的安装和数据不上传，但目录下第一层的 .py（启动器 studio.py、剪辑过程 journal.py、导入文件夹 importer.py）是项目自己的代码
+douyin/editor/*
+!douyin/editor/*.py
 douyin/.venv/
 filmlab/
 

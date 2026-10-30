@@ -19,6 +19,7 @@ from pathlib import Path
 import anim_lib
 import clawd_anim as ca
 import ending
+import film_sections
 import moments
 import opening
 import template_lib
@@ -51,29 +52,50 @@ def _raw(stem: str) -> dict:
     return json.loads(song_path(stem).read_text(encoding="utf-8-sig"))
 
 
-def latest_video(stem: str) -> Path | None:
-    """这首歌最近一次出的整片（待上传里 job.json 指向这个歌曲文件的、最新的那个文件夹）。"""
+def _abs_song(p: str) -> str:
+    """job.json 里的 song 可能是绝对路径，也可能是相对 douyin 的 tracks/songs/x.json：统一成绝对路径比较。"""
+    q = Path(p)
+    return str((q if q.is_absolute() else ROOT / q).resolve()) if p else ""
+
+
+def _tracks_jobs() -> list[tuple[Path, dict]]:
     import storage
-    target = str(song_path(stem))
-    best = None
+    out = []
     for job in storage.deliver_dir().glob("*/job.json"):
         try:
-            if json.loads(job.read_text(encoding="utf-8")).get("song") == target and (job.parent / "video.mp4").exists():
-                if best is None or job.parent.name > best.name:
-                    best = job.parent
+            out.append((job.parent, json.loads(job.read_text(encoding="utf-8"))))
         except (OSError, ValueError):
             continue
+    return out
+
+
+def latest_video(stem: str) -> Path | None:
+    """这首歌最近一次出的整片（待上传里 job.json 指向这个歌曲文件的、最新的那个音轨作品文件夹）。"""
+    target = str(song_path(stem))
+    best = None
+    for folder, job in _tracks_jobs():
+        if _abs_song(job.get("song", "")) == target and job.get("kind", "tracks") == "tracks" and (folder / "video.mp4").exists():
+            if best is None or folder.name > best.name:
+                best = folder
     return best / "video.mp4" if best else None
 
 
+def check(stem: str) -> None:
+    """分段修改的 stem：歌曲 json（音轨视频），或者待上传里的作品文件夹（手绘动画 / 3D MV / 以后的新类型）。"""
+    if not film_sections.is_work(stem):
+        song_path(stem)
+
+
 def list_songs(media_url) -> list[dict]:
+    """音轨视频（有评论故事的，或者出过音轨整片的歌）+ 其他类型的作品（钢琴下落音符不分段）。"""
+    made = {_abs_song(j.get("song", "")) for _, j in _tracks_jobs() if j.get("kind") == "tracks"}
     out = []
     for p in sorted(SONGS.glob("*.json"), key=lambda q: q.stat().st_mtime, reverse=True):
         try:
             raw = json.loads(p.read_text(encoding="utf-8-sig"))
         except ValueError:
             continue
-        if not raw.get("story"):
+        if not raw.get("story") and str(p.resolve()) not in made:
             continue
         cover = Path(raw.get("final_image") or "")
         local = JOBS / p.stem / "cover.jpg"                  # 封面可能在 douyin 目录外（网页读不到）：复制一份小图
@@ -82,13 +104,15 @@ def list_songs(media_url) -> list[dict]:
             local.parent.mkdir(parents=True, exist_ok=True)
             Image.open(cover).convert("RGB").resize((96, 96)).save(local, quality=88)
         out.append({"stem": p.stem, "title": raw.get("title", p.stem), "artist": raw.get("artist", ""),
-                    "cover": media_url(local) if local.exists() else None,
+                    "cover": media_url(local) if local.exists() else None, "kind": "音轨故事" if raw.get("story") else "音轨",
                     "versions": _hist_versions(p.stem)})
-    return out
+    return out + film_sections.list_works(media_url)
 
 
 def sections(stem: str) -> dict:
     """{song: {...}, sections: [{id, kind, title, sub, range, data}]}，按时间排好。"""
+    if film_sections.is_work(stem):
+        return film_sections.sections(stem)
     raw = _raw(stem)
     song = template_lib.resolve(json.loads(json.dumps(raw)))
     dur = float(song.get("duration", 96))
@@ -123,16 +147,30 @@ def sections(stem: str) -> dict:
                     "sub": sc.get("question", "") or sc.get("note", "")[:40], "range": [dur - end_s - 0.5, dur],
                     "data": sc})
     out.sort(key=lambda s: s["range"][0])
+    try:                                                    # 开头设计的模板：选一个当这条视频的开头（不选 = 原来的开头设置）
+        import openers
+        tpls = [t for t in openers.list_templates() if t["engine"] in ("flick", "opening")]
+        cur = raw.get("opener") or {}
+        out.insert(0, {"id": "opener", "kind": "opener", "title": "开头模板", "sub": (cur.get("name") if isinstance(cur, dict) else cur) or "没选（用原来的开头设置）",
+                       "range": [0.0, intro], "data": {"opener": (cur.get("name") if isinstance(cur, dict) else cur) or ""},
+                       "fields": [{"key": "opener", "label": "用「开头设计」里的哪个模板当开头（改完点「出整片」生效）", "type": "select",
+                                   "options": [["", "不用模板（原来的开头设置）"]] + [[t["name"], f"{t['name']}（{t['engine_zh']}）"] for t in tpls]}]})
+    except Exception:
+        pass
     out.append({"id": "song", "kind": "song", "title": "整体", "sub": "标题、文案、话题、歌词字号、节奏、显示哪几条音轨",
                 "range": None, "data": {k: song.get(k) for k in ("douyin_title", "description", "tags", "lyric_size",
                                                                  "pace", "tracks_keep")}})
     lv = latest_video(stem)
     return {"song": {"stem": stem, "title": song.get("title"), "artist": song.get("artist"), "duration": dur,
-                     "intro": intro, "video": str(lv) if lv else None, "versions": _hist_versions(stem)},
+                     "intro": intro, "video": str(lv) if lv else None, "versions": _hist_versions(stem),
+                     "kind": "音轨故事" if song.get("story") else "音轨", "mode": "story", "can_build": True, "can_claude": True,
+                     "build_label": "出整片（约 35 分钟）"},
             "sections": out}
 
 
 def find(stem: str, sid: str) -> dict:
+    if film_sections.is_work(stem):
+        return film_sections.find(stem, sid)
     for s in sections(stem)["sections"]:
         if s["id"] == sid:
             return s
@@ -231,6 +269,11 @@ def clean(kind: str, data: dict, base: dict, song: dict) -> dict:
                 "tags": tags, "lyric_size": int(_num(get("lyric_size") or 40, 32, 72, 40)),
                 "pace": _num(get("pace") or 1.0, 0.8, 2.5, 1.0),
                 "tracks_keep": keep if len(keep) >= 2 else base.get("tracks_keep")}
+    if kind == "opener":
+        import openers
+        name = str(data.get("opener", base.get("opener")) or "")
+        names = {t["name"] for t in openers.list_templates() if t["engine"] in ("flick", "opening")}
+        return {"opener": name if name in names else ""}
     if kind in ("opening", "ending"):
         out = anim_lib.clean(kind, data, base)
         out["note"] = str(data.get("note") or base.get("note", ""))[:300]
@@ -263,6 +306,8 @@ def _snapshot(stem: str, note: str) -> int:
 
 def apply(stem: str, sid: str, data: dict, via: str = "api") -> dict:
     """采用一个方案：先把当前歌曲 json 存成历史版本，再改这一块。返回 {history, data}。"""
+    if film_sections.is_work(stem):
+        return film_sections.apply(stem, sid, data, via)
     raw = _raw(stem)
     song = template_lib.resolve(json.loads(json.dumps(raw)))
     sec = find(stem, sid)
@@ -287,12 +332,19 @@ def apply(stem: str, sid: str, data: dict, via: str = "api") -> dict:
         raw["story"]["finale"] = new
     elif kind == "song":
         raw.update({k: v for k, v in new.items() if v is not None})
+    elif kind == "opener":
+        if new["opener"]:
+            raw["opener"] = {"name": new["opener"]}
+        else:
+            raw.pop("opener", None)
     song_path(stem).write_text(json.dumps(raw, ensure_ascii=False, indent=2), encoding="utf-8")
     return {"history": hist, "data": new}
 
 
 def restore(stem: str, ver: int) -> int:
     """回到某个历史版本（当前的也先存一份，所以随时能再回来）。"""
+    if film_sections.is_work(stem):
+        return film_sections.restore(stem, ver)
     src = HIST / stem / f"v{int(ver)}.json"
     if not src.exists():
         raise FileNotFoundError(f"没有 v{ver}")
@@ -304,6 +356,8 @@ def restore(stem: str, ver: int) -> int:
 # ====================================================================== A：用户自己的大模型
 def chat(stem: str, sid: str, message: str, history: list[dict]) -> dict:
     import re
+    if film_sections.is_work(stem):
+        return film_sections.chat(stem, sid, message, history)
     raw = _raw(stem)
     song = template_lib.resolve(json.loads(json.dumps(raw)))
     sec = find(stem, sid)
@@ -354,6 +408,8 @@ CLAUDE_PROMPT = """你在 cc-piano 项目的 tracks 目录里（像素小人 CC 
 
 def claude_job(stem: str, sid: str, message: str, progress=None) -> dict:
     """在后台跑 claude -p 改这一块；import 检查不过就还原代码。返回 {summary, data, cost_usd, history}。"""
+    if film_sections.is_work(stem):
+        return film_sections.claude_job(stem, sid, message, progress)
     raw = _raw(stem)
     song = template_lib.resolve(json.loads(json.dumps(raw)))
     sec = find(stem, sid)
@@ -430,6 +486,8 @@ def run_build(stem: str, extra: list[str], progress=None) -> dict:
 
 
 def preview(stem: str, sid: str, progress=None) -> dict:
+    if film_sections.is_work(stem):
+        return film_sections.preview(stem, sid, progress)
     sec = find(stem, sid)
     if not sec["range"]:
         raise ValueError("「整体」没有单独的预览，直接出整片看")
@@ -442,6 +500,8 @@ def preview(stem: str, sid: str, progress=None) -> dict:
 
 
 def full_build(stem: str, progress=None) -> dict:
+    if film_sections.is_work(stem):
+        return film_sections.full_build(stem, progress)
     return run_build(stem, ["--prepare"], progress)
 
 

@@ -1,0 +1,11 @@
+{
+ "engine": "opening",
+ "zh": "加班的夜",
+ "note": "开头小剧场：深夜办公室读评论，最后接拨片卡片（office 脚本）",
+ "params": {
+  "script": "office",
+  "script_version": 0,
+  "seconds": 20.0
+ },
+ "time": "2026-10-30T23:15:12"
+}

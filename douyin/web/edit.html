@@ -56,13 +56,21 @@ body { overflow: hidden; }
 .exp button.on { background: var(--accent); color: #fff; cursor: default; }
 .slim-r #right .exp { display: none; }
 .step button:hover { background: color-mix(in srgb, var(--accent) 30%, transparent); }
+.imp { padding: 0 12px 10px; display: flex; flex-direction: column; gap: 4px; }
+.btn-imp { padding: 7px 12px; border: 1px dashed var(--sep); border-radius: 10px; background: none; color: var(--label); font: inherit;
+  font-size: calc(var(--fs) * .84); cursor: pointer; }
+.btn-imp:hover { border-color: var(--accent); background: var(--fill-2); }
+.btn-imp[disabled] { opacity: .5; cursor: default; }
+.imp small { color: var(--label-2); font-size: calc(var(--fs) * .74); }
+.slim-l #left .imp { display: none; }
 </style>
 </head>
 <body>
 <div class="page">
   <section class="col" id="left">
     <h2><span>剪辑工程</span><button class="fold" id="foldL" type="button" title="收起/展开">⇤</button></h2>
-    <div class="hint">每条音轨成片都会自动生成一个工程</div>
+    <div class="hint">音轨成片、手绘动画、开头设计出的开头都会自动生成工程；也可以导入一个文件夹</div>
+    <div class="imp"><button class="btn-imp" id="importBtn" type="button">＋ 导入文件夹</button><small id="importState"></small></div>
     <div class="list" id="projects"></div>
   </section>
   <section class="stage" id="stage">
@@ -100,7 +108,7 @@ async function loadProjects() {
     <button class="proj${p.folder === current ? " on" : ""}" data-folder="${esc(p.folder)}" type="button" title="${esc(p.name)}">
       ${p.cover ? `<img src="${p.cover}" alt="">` : "<img alt=\"\">"}
       <span><b>${esc(p.name)}</b><small>${p.time} · ${p.steps} 步${p.edited ? " · 已导出" : ""}</small></span>
-    </button>`).join("") || '<div class="hint">还没有剪辑工程。音轨剪辑出片后会自动出现在这里。</div>';
+    </button>`).join("") || '<div class="hint">还没有剪辑工程。出片后会自动出现在这里，也可以点上面「导入文件夹」。</div>';
 }
 
 // 剪辑器里「导出」出来的视频：选一个，发布台和每日发布就改用它（video_edited.mp4）
@@ -157,6 +165,23 @@ async function open(folder) {
 }
 
 $("projects").addEventListener("click", (e) => { const b = e.target.closest(".proj"); if (b) open(b.dataset.folder); });
+// 导入文件夹：弹出选择框 → 复制进项目 → 按文件类型 / 子文件夹分轨（长视频按镜头切开）→ 自动打开
+$("importBtn").addEventListener("click", async () => {
+  const b = $("importBtn"), st = $("importState");
+  b.disabled = true; st.textContent = "在弹出的窗口里选文件夹…";
+  try {
+    const r = await api("/api/edit/import", {});
+    if (r.cancelled) { st.textContent = ""; b.disabled = false; return; }
+    for (;;) {
+      await new Promise((ok) => setTimeout(ok, 1200));
+      const j = await api("/api/sections/job?id=" + r.job);
+      if (j.status === "error") throw new Error(j.error);
+      if (j.status === "done") { st.textContent = `已导入「${j.result.title}」`; await loadProjects(); open(j.result.folder); break; }
+      st.textContent = j.status === "queued" ? "排队中…" : `${Math.round(j.progress * 100)}%  ${j.msg || ""}`;
+    }
+  } catch (e) { st.textContent = e.message; }
+  b.disabled = false;
+});
 $("history").addEventListener("click", async (e) => {
   const b = e.target.closest("button[data-id]");
   if (!b || !confirm("回到这一步？当前状态也会先记下来，之后还能再回来。")) return;

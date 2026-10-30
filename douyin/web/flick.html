@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>拨片开头</title>
+<title>开头设计</title>
 <script>if (window.parent !== window) document.documentElement.classList.add("embed");</script>
 <script src="/ui/tilt3d.js"></script>
 <style>
@@ -126,18 +126,58 @@ h3 i { font: italic 400 30px/1 var(--display); color: var(--brass-hi); min-width
 .song-add input:focus { border-color: var(--brass-hi); }
 .song-add .btn { white-space: nowrap; }
 #songDlg .row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+/* ---------- 开头设计：模板条、模板参数、设计助手（2026-10-30 新增，原来的拨片区域不变） ---------- */
+.tpls { display: flex; gap: 10px; flex-wrap: wrap; margin: -6px 0 18px; }
+.tpl { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 9px 16px; border-radius: 14px; cursor: pointer;
+  border: 1px solid var(--rule); background: rgba(27, 19, 16, .5); color: var(--ivory); text-align: left; }
+.tpl:hover { border-color: var(--brass); }
+.tpl.on { border-color: var(--brass-hi); background: rgba(184, 146, 74, .16); }
+.tpl b { font-size: 15px; } .tpl small { font-size: 12px; color: var(--ivory-3); }
+.tpl-panel { display: grid; grid-template-columns: 1fr 360px; gap: 44px; padding: 10px 0 40px; }
+.tpl-panel[hidden], .stage-shell[hidden], .desk[hidden] { display: none !important; }
+.tpl-media { border-radius: 14px; overflow: hidden; background: #050505; aspect-ratio: 16 / 9; display: grid; place-items: center; }
+.tpl-media video { width: 100%; height: 100%; display: block; background: #000; }
+.sel, .tpl-form input[type=number] { width: 100%; padding: 6px 8px; border-radius: 10px; border: 1px solid var(--rule); background: rgba(0,0,0,.25); color: var(--ivory); }
+.row2 { display: flex; gap: 10px; margin-top: 8px; } .row2 .btn { flex: 1; justify-content: center; }
+.pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px; max-height: 260px; overflow: auto; margin-top: 6px; }
+.pick label { position: relative; cursor: pointer; border-radius: 9px; overflow: hidden; border: 2px solid transparent; }
+.pick label.on { border-color: var(--brass-hi); } .pick label.fin { border-color: var(--felt); }
+.pick img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; }
+.pick input { position: absolute; opacity: 0; }
+.pick i { position: absolute; top: 3px; left: 3px; font: 600 11px/1 var(--display); font-style: normal; padding: 2px 5px; border-radius: 999px; background: rgba(0,0,0,.7); }
+.designer { padding: 0 0 80px; }
+.designer .msgs { display: flex; flex-direction: column; gap: 8px; max-height: 360px; overflow: auto; padding: 4px 2px 12px; }
+.msg { max-width: 86%; padding: 9px 14px; border-radius: 14px; font-size: 14.5px; line-height: 1.6; white-space: pre-wrap; }
+.msg.user { align-self: flex-end; background: var(--brass); color: var(--ebony); }
+.msg.ai { align-self: flex-start; background: rgba(239, 230, 210, .08); }
+.msg.claude { align-self: flex-start; background: rgba(217, 119, 87, .22); }
+.msg.sys { align-self: center; color: var(--ivory-3); font-size: 13px; text-align: center; }
+.proposal { align-self: stretch; border: 1px solid var(--brass); border-radius: 12px; padding: 10px 12px; }
+.proposal pre { margin: 6px 0; font: 12.5px/1.5 Consolas, monospace; white-space: pre-wrap; color: var(--ivory-2); max-height: 200px; overflow: auto; }
+.designer form { display: flex; flex-direction: column; gap: 10px; }
+.designer textarea { min-height: 70px; resize: vertical; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--rule); background: rgba(0,0,0,.25); color: var(--ivory); font: inherit; font-size: 14.5px; }
+.designer .acts { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.designer .acts input { flex: 1; min-width: 180px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--rule); background: rgba(0,0,0,.25); color: var(--ivory); }
+.btn.claude { background: #d97757; color: #fff; border-color: transparent; }
+#apiDlg { width: min(460px, 100% - 32px); padding: 22px; }
+#apiDlg h4 { margin: 0 0 14px; font-size: 16px; }
+#apiDlg .row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
+@media (max-width: 960px) { .tpl-panel { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="masthead">
-    <h1 class="wordmark"><span class="zh">拨片开头</span><span class="la">Flick Intro</span></h1>
+    <h1 class="wordmark"><span class="zh">开头设计</span><span class="la">Opening Design</span></h1>
     <div class="mast-actions">
       <a class="btn" href="/">回到琴房</a>
       <button class="btn" id="openDeliver" type="button">打开待上传文件夹</button>
       <button class="btn" id="openJianying" type="button">打开剪映</button>
     </div>
   </header>
+
+  <!-- 开头模板（「拨片」是第一个内置模板 = 下面原来的拨片开头，功能不变；其他模板在 #tplPanel 里出片） -->
+  <nav class="tpls" id="tpls" aria-label="开头模板"></nav>
 
   <section class="stage-shell" aria-label="开头预览">
     <div class="stage" id="stage"><canvas id="canvas"></canvas></div>
@@ -186,7 +226,47 @@ h3 i { font: italic 400 30px/1 var(--display); color: var(--brass-hi); min-width
       </div>
     </aside>
   </main>
+
+  <!-- 选中「拨片」以外的模板时显示：参数、出片 -->
+  <section class="tpl-panel" id="tplPanel" hidden>
+    <div class="tpl-view">
+      <div class="tpl-media" id="tplMedia"><p class="hint">点「生成开头」出片后在这里播放</p></div>
+      <p class="where" id="tplWhere"></p>
+    </div>
+    <aside class="panel tpl-form">
+      <h3><i>II</i><span id="tplName">模板</span></h3>
+      <p class="hint" id="tplNote"></p>
+      <label class="field"><span>版本</span><select id="tplVer" class="sel"></select></label>
+      <label class="field"><span>标题（歌名，可留空）</span><input type="text" id="tplTitle"></label>
+      <label class="field"><span>歌手</span><input type="text" id="tplArtist"></label>
+      <div id="tplParams"></div>
+      <div class="row2"><button class="btn" id="tplSave" type="button">存为新版本</button>
+        <button class="btn primary" id="tplGo" type="button">生成开头</button></div>
+      <p class="hint" id="tplState"></p>
+    </aside>
+  </section>
+
+  <!-- 设计助手：聊天设计开头，设计好的存成模板 -->
+  <section class="designer" id="designer">
+    <h3><i>III</i>设计助手</h3>
+    <p class="hint">在下面说想要什么样的开头。「发送」用你自己的大模型调整当前模板的参数（选哪几张专辑、顺序、主图、时长、横竖屏…），
+      满意了「存为模板」；要全新的动画效果就点「交给 Claude」，它会写一个新动效、试渲染通过后存成新模板（只新增，不改已有的）。</p>
+    <div class="msgs" id="dMsgs"><div class="msg sys">当前模板：拨片。说说想怎么设计这个开头。</div></div>
+    <form id="dForm"><textarea id="dIn" placeholder="比如：只用夜晚色调的那几张专辑，慢一点滑，最后停在 i have no friends 的封面上，竖屏"></textarea>
+      <div class="acts"><input type="text" id="dNew" placeholder="新模板名（交给 Claude / 存为模板时用）">
+        <button class="btn" id="dApi" type="button">API 设置</button>
+        <button class="btn claude" id="dClaude" type="button">交给 Claude</button>
+        <button class="btn primary" id="dSend" type="submit">发送（我的 API）</button></div></form>
+  </section>
 </div>
+<dialog id="apiDlg" aria-labelledby="apiDlgTitle">
+  <h4 id="apiDlgTitle">聊天用的大模型（OpenAI 兼容接口，和动画库、分段修改共用）</h4>
+  <label class="field"><span>接口地址</span><input type="text" id="apiBase" placeholder="https://api.deepseek.com"></label>
+  <label class="field"><span>模型</span><input type="text" id="apiModel" placeholder="deepseek-chat"></label>
+  <label class="field"><span>密钥（只存在你电脑的用户环境变量 CC_PIANO_LLM_KEY 里）</span><input type="password" id="apiKey" placeholder="不改就留空"></label>
+  <p class="hint" id="apiState"></p>
+  <div class="row"><button class="btn" id="apiCancel" type="button">取消</button><button class="btn primary" id="apiSave" type="button">保存</button></div>
+</dialog>
 <dialog id="songDlg" aria-labelledby="songDlgTitle">
   <h4 id="songDlgTitle">选择歌曲</h4>
   <p class="sub" id="songDlgSub">这张专辑里的歌，选中的那首会显示在卡片和预览里</p>
@@ -559,5 +639,193 @@ window.BackTop.attach($(".stage-shell"));
 <!-- 文字操作按钮换成简化图标（web/ui/iconize.js） -->
 <script src="/ui/iconize.js"></script>
 <script>window.Iconize.apply([{ sel: ".mast-actions a[href=\"/\"]", icon: "home" }, { sel: "#openDeliver", icon: "folder", label: "打开视频文件夹" }, { sel: "#openJianying", icon: "jianying" }, { sel: "#openFolder", icon: "folder" }, { sel: "#replay", icon: "replay" }]);</script>
+<script>
+// ====================================================== 开头设计：模板、参数、设计助手（2026-10-30 新增；上面原来的拨片开头代码没有改）
+(() => {
+"use strict";
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const BUILTIN_FLICK = "拨片";
+let T = [], LIB = [], SCRIPTS = [], LLM = {}, cur = BUILTIN_FLICK, curT = null, edit = null, chats = {};
+async function api(path, body) {
+  const r = await fetch(path, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {});
+  const j = await r.json().catch(() => ({ error: "服务没有响应，确认琴房窗口还开着" }));
+  if (!r.ok || j.error) throw new Error(j.error || "出错了");
+  return j;
+}
+async function poll(job, onProg) {
+  for (;;) {
+    await new Promise((ok) => setTimeout(ok, 1500));
+    const j = await api("/api/sections/job?id=" + job);
+    if (j.status === "done") return j.result;
+    if (j.status === "error") throw new Error(j.error);
+    if (j.status === "missing") throw new Error("任务不见了（琴房重启过？）");
+    onProg(j);
+  }
+}
+async function load(keep) {
+  const j = await api("/api/opener/templates");
+  T = j.templates; LIB = (j.library && j.library.items) || []; SCRIPTS = j.scripts || []; LLM = j.llm || {};
+  renderChips();
+  select(keep && T.some((t) => t.name === keep) ? keep : cur);
+}
+function renderChips() {
+  $("#tpls").innerHTML = T.map((t) => `<button class="tpl${t.name === cur ? " on" : ""}" type="button" data-n="${esc(t.name)}">
+    <b>${esc(t.name)}</b><small>${esc(t.engine_zh)} · v${t.versions[t.versions.length - 1]}${t.builtin ? " · 内置" : ""}</small></button>`).join("");
+}
+$("#tpls").addEventListener("click", (e) => { const b = e.target.closest(".tpl"); if (b) select(b.dataset.n); });
+function select(name) {
+  cur = name; curT = T.find((t) => t.name === name) || null;
+  renderChips();
+  const flick = name === BUILTIN_FLICK;                 // 内置「拨片」= 原来的拨片开头界面
+  document.querySelector(".stage-shell").hidden = !flick;
+  document.querySelector(".desk").hidden = !flick;
+  $("#tplPanel").hidden = flick;
+  if (!flick && curT) showPanel();
+  const c = chatOf(name);
+  $("#dMsgs").innerHTML = c.html.join("") || `<div class="msg sys">当前模板：${esc(name)}（${esc(curT ? curT.engine_zh : "")}）。说说想怎么设计这个开头。</div>`;
+  $("#dNew").placeholder = flick ? "新模板名（存为模板时用，比如「我的拨片」）" : `新模板名（留空 = 存成「${name}」的新版本）`;
+}
+// ---------- 模板参数 ----------
+function showPanel() {
+  const t = curT;
+  $("#tplName").textContent = t.name;
+  $("#tplNote").textContent = (t.note || "").startsWith(t.engine_zh) ? t.note : `${t.engine_zh}：${t.note || ""}`;
+  $("#tplVer").innerHTML = t.versions.slice().reverse().map((v) => `<option value="${v}">v${v}${v === t.version ? "（最新）" : ""}</option>`).join("");
+  edit = JSON.parse(JSON.stringify(t.params));
+  drawParams();
+}
+$("#tplVer").addEventListener("change", async () => {
+  try { const j = await api("/api/opener/templates"); T = j.templates; } catch (e) { /* 用旧的 */ }
+  curT = T.find((t) => t.name === cur);
+  $("#tplState").textContent = `出片会用 v${$("#tplVer").value}（参数区显示的是最新版）`;
+});
+function drawParams() {
+  const eng = curT.engine, p = edit, box = $("#tplParams");
+  if (eng === "flick") {
+    const order = p.images || [];
+    box.innerHTML = `<label class="field"><span>时长</span><input type="number" id="pSec" min="3" max="7" step="0.5" value="${p.seconds}"></label>
+      <label class="check"><input type="checkbox" id="pVert"${p.vertical ? " checked" : ""}>竖屏 9:16</label>
+      <label class="check"><input type="checkbox" id="pText"${p.text ? " checked" : ""}>落定后写歌名歌手</label>
+      <div class="field"><span>专辑（点选 = 按点的顺序滑过，都不选 = 整个专辑库；双击 = 设为最后停留的主图）</span>
+      <div class="pick" id="pPick">${LIB.map((it) => {
+        const k = order.indexOf(it.file);
+        return `<label class="${k >= 0 ? "on" : ""}${p.final === it.file ? " fin" : ""}" data-f="${esc(it.file)}" title="${esc(it.name)}">
+          <img src="${it.url}" alt="" loading="lazy">${k >= 0 ? `<i>${k + 1}</i>` : ""}${p.final === it.file ? "<i style=\"left:auto;right:3px\">★</i>" : ""}</label>`; }).join("")}</div></div>`;
+    $("#pPick").addEventListener("click", (e) => {
+      const l = e.target.closest("label"); if (!l) return; e.preventDefault();
+      const f = l.dataset.f, i = order.indexOf(f);
+      if (i >= 0) order.splice(i, 1); else order.push(f);
+      p.images = order; drawParams();
+    });
+    $("#pPick").addEventListener("dblclick", (e) => { const l = e.target.closest("label"); if (!l) return; p.final = p.final === l.dataset.f ? "" : l.dataset.f; drawParams(); });
+    $("#pSec").addEventListener("change", (e) => { p.seconds = +e.target.value; });
+    $("#pVert").addEventListener("change", (e) => { p.vertical = e.target.checked; });
+    $("#pText").addEventListener("change", (e) => { p.text = e.target.checked; });
+  } else if (eng === "opening") {
+    box.innerHTML = `<label class="field"><span>小剧场脚本</span><select class="sel" id="pScript">${SCRIPTS.map((s) => `<option${s === p.script ? " selected" : ""}>${esc(s)}</option>`).join("")}</select></label>
+      <label class="field"><span>时长（秒）</span><input type="number" id="pSec" min="12" max="30" step="0.5" value="${p.seconds}"></label>
+      <p class="hint">开头小剧场只有横屏；最后接专辑库主图的拨片卡片。</p>`;
+    $("#pScript").addEventListener("change", (e) => { p.script = e.target.value; p.script_version = 0; });
+    $("#pSec").addEventListener("change", (e) => { p.seconds = +e.target.value; });
+  } else {                                               // Claude 设计的新动效：按参数类型给输入框
+    box.innerHTML = Object.entries(p).map(([k, v]) => typeof v === "boolean"
+      ? `<label class="check"><input type="checkbox" data-k="${esc(k)}"${v ? " checked" : ""}>${esc(k)}</label>`
+      : `<label class="field"><span>${esc(k)}</span><input ${typeof v === "number" ? 'type="number" step="any"' : 'type="text"'} data-k="${esc(k)}" value="${esc(Array.isArray(v) ? v.join(",") : v)}"></label>`).join("")
+      || '<p class="hint">这个动效没有可调的参数。</p>';
+    box.querySelectorAll("[data-k]").forEach((el) => el.addEventListener("change", () => {
+      const k = el.dataset.k, old = p[k];
+      p[k] = el.type === "checkbox" ? el.checked : typeof old === "number" ? +el.value : Array.isArray(old) ? el.value.split(",").map((s) => s.trim()).filter(Boolean) : el.value;
+    }));
+  }
+}
+const changed = () => JSON.stringify(edit) !== JSON.stringify(curT.params);
+async function saveVersion(name, params, note) {
+  const r = await api("/api/opener/save", { name: cur, new_name: name, params, note });
+  T = r.templates; return r;
+}
+$("#tplSave").addEventListener("click", async () => {
+  try { const r = await saveVersion(cur, edit, "在开头设计页里改的参数"); $("#tplState").textContent = `已存为 ${r.name} v${r.version}`; await load(r.name); }
+  catch (e) { $("#tplState").textContent = e.message; }
+});
+$("#tplGo").addEventListener("click", async () => {
+  const go = $("#tplGo"); go.disabled = true;
+  try {
+    let ver = +$("#tplVer").value;
+    if (changed()) { const r = await saveVersion(cur, edit, "出片前自动保存"); ver = r.version; await load(cur); }
+    const { job } = await api("/api/opener/render", { name: cur, version: ver, title: $("#tplTitle").value.trim(), artist: $("#tplArtist").value.trim() });
+    const res = await poll(job, (j) => { $("#tplState").textContent = j.status === "queued" ? "排队中…" : `${Math.round(j.progress * 100)}%  ${j.msg || ""}`; });
+    $("#tplMedia").innerHTML = `<video src="${res.video_url}" controls autoplay playsinline poster="${res.cover_url || ""}"></video>`;
+    $("#tplWhere").textContent = `已保存到 ${res.folder}${res.project ? "；剪辑页里能按图层改（每张专辑一轨、歌名可改字）" : ""}`;
+    $("#tplState").textContent = "开头已生成";
+  } catch (e) { $("#tplState").textContent = e.message; }
+  go.disabled = false;
+});
+// ---------- 设计助手 ----------
+function chatOf(n) { return (chats[n] = chats[n] || { html: [], history: [] }); }
+function addMsg(cls, html) {
+  const h = `<div class="msg ${cls}">${html}</div>`; chatOf(cur).html.push(h);
+  $("#dMsgs").insertAdjacentHTML("beforeend", h); $("#dMsgs").scrollTop = 1e9; return $("#dMsgs").lastElementChild;
+}
+function targetName() { return $("#dNew").value.trim() || (cur === BUILTIN_FLICK ? "我的拨片" : cur); }
+$("#dForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const text = $("#dIn").value.trim(); if (!text) return;
+  $("#dIn").value = ""; addMsg("user", esc(text));
+  const wait = addMsg("sys", "你的大模型正在想……"), c = chatOf(cur), from = cur;
+  try {
+    const r = await api("/api/opener/chat", { name: from, message: text, history: c.history });
+    wait.remove(); c.html = c.html.filter((h) => !h.includes("正在想"));
+    c.history.push({ role: "user", content: text }, { role: "assistant", content: r.reply + (r.proposal ? "\n" + JSON.stringify(r.proposal) : "") });
+    addMsg("ai", esc(r.reply));
+    if (r.proposal) {
+      const p = document.createElement("div"); p.className = "proposal";
+      p.innerHTML = `<b>新参数</b>${r.proposal.note ? `：${esc(r.proposal.note)}` : ""}<pre>${esc(JSON.stringify(r.proposal.params, null, 1))}</pre>
+        <div class="row2"><button class="btn" type="button" data-a="save">存为模板</button><button class="btn primary" type="button" data-a="go">存为模板并生成</button></div>`;
+      p.addEventListener("click", async (ev) => {
+        const b = ev.target.closest("button"); if (!b) return;
+        b.disabled = true;
+        try {
+          const name = targetName(), sv = await api("/api/opener/save", { name: from, new_name: name, params: r.proposal.params, note: r.proposal.note || text.slice(0, 100) });
+          addMsg("sys", `已存为模板「${esc(sv.name)}」v${sv.version}`);
+          await load(sv.name);
+          if (b.dataset.a === "go") $("#tplGo").click();
+        } catch (err) { addMsg("sys", esc(err.message)); b.disabled = false; }
+      });
+      $("#dMsgs").appendChild(p); $("#dMsgs").scrollTop = 1e9;
+    }
+  } catch (err) { wait.remove(); addMsg("sys", esc(err.message)); if (/API 设置|密钥/.test(err.message)) openApi(); }
+});
+$("#dIn").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("#dForm").requestSubmit(); } });
+$("#dClaude").addEventListener("click", async () => {
+  const text = $("#dIn").value.trim();
+  if (!text) return addMsg("sys", "先在输入框里写想要什么样的新开头。");
+  const name = $("#dNew").value.trim() || `${cur}·新动效`;
+  if (!confirm(`交给 Claude：设计一个新的开头动效，试渲染通过后存成新模板「${name}」（只新增，不改已有的）。\n每次大约 0.5~2 美元、几分钟到十几分钟。继续？`)) return;
+  $("#dIn").value = ""; addMsg("user", esc(text) + "  <small>（交给 Claude）</small>");
+  const st = addMsg("sys", "已交给 Claude…");
+  try {
+    const { job } = await api("/api/opener/claude", { name: cur, message: text, new_name: name });
+    const res = await poll(job, (j) => { st.textContent = `Claude 正在做 ${j.status === "queued" ? "（排队中）" : Math.round(j.progress * 100) + "%  " + (j.msg || "")}`; });
+    st.textContent = `完成（花费约 $${res.cost_usd}），存成了模板「${res.name}」v${res.version}`;
+    addMsg("claude", esc(res.summary) + (res.video_url ? `<br><video src="${res.video_url}" controls playsinline style="width:100%;margin-top:8px;border-radius:10px"></video>` : ""));
+    await load(res.name);
+  } catch (err) { st.textContent = err.message; }
+});
+// ---------- API 设置（和动画库共用） ----------
+function openApi() {
+  $("#apiBase").value = LLM.base_url || ""; $("#apiModel").value = LLM.model || ""; $("#apiKey").value = "";
+  $("#apiState").textContent = LLM.has_key ? "已经配置过密钥（不显示）。" : "还没有配置密钥。";
+  $("#apiDlg").showModal();
+}
+$("#dApi").addEventListener("click", openApi);
+$("#apiCancel").addEventListener("click", () => $("#apiDlg").close());
+$("#apiSave").addEventListener("click", async () => {
+  try { LLM = await api("/api/anim/llm", { base_url: $("#apiBase").value.trim(), model: $("#apiModel").value.trim(), key: $("#apiKey").value.trim() }); $("#apiDlg").close(); }
+  catch (e) { $("#apiState").textContent = e.message; }
+});
+load().catch((e) => { $("#tpls").innerHTML = `<p class="hint">${esc(e.message)}</p>`; });
+})();
+</script>
 </body>
 </html>

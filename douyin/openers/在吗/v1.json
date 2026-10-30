@@ -1,0 +1,11 @@
+{
+ "engine": "opening",
+ "zh": "在吗",
+ "note": "开头小剧场：聊天窗口「在吗」（zaima 脚本）",
+ "params": {
+  "script": "zaima",
+  "script_version": 0,
+  "seconds": 20.0
+ },
+ "time": "2026-10-30T23:15:12"
+}

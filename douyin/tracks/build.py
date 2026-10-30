@@ -485,9 +485,15 @@ def main() -> int:
 
     # 1. 开头
     intro = mat / "intro.mp4"
+    if song.get("opener"):                         # 「开头设计」的模板（tracks/openers）：翻译成下面原来就认识的字段
+        import openers
+        openers.apply_to_song(song)
     if song.get("intro_from_library"):            # 用「拨片开头」图库里的图片和顺序（intro_final 指定主图）
         import flick_lib
         others, final = flick_lib.sequence(final=song.get("intro_final"))
+        if song.get("intro_images"):              # 模板指定了用哪几张专辑、按什么顺序
+            others = [flick_lib.LIB_DIR / f for f in song["intro_images"]
+                      if (flick_lib.LIB_DIR / f).exists() and flick_lib.LIB_DIR / f != final] or others
     else:
         others = [(base / p).resolve() for p in song.get("images", [])]
         final = (base / song["final_image"]).resolve()

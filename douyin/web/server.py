@@ -55,7 +55,7 @@ mimetypes.add_type("text/javascript", ".js")      # three.js 是 ES 模块：类
 mimetypes.add_type("model/gltf-binary", ".glb")
 TRACK_SONGS = ROOT / "tracks" / "songs"
 PAGES = {"/": "landing.html", "/app": "app.html", "/anim": "anim.html", "/studio": "index.html", "/index.html": "index.html",
-         "/flick": "flick.html", "/flick.html": "flick.html", "/tracks": "tracks.html", "/works": "works.html",
+         "/flick": "flick.html", "/flick.html": "flick.html", "/opener": "flick.html", "/tracks": "tracks.html", "/works": "works.html",
          "/tour": "tour.html", "/settings": "settings.html", "/edit": "edit.html", "/sections": "sections.html",
          "/writer": "writer.html", "/model3d": "model3d.html"}
 AVATAR = ROOT / CFG["intro"]["avatar"]
@@ -385,7 +385,7 @@ def section_job(kind: str, fn) -> str:
 def section_media(res: dict) -> dict:
     """任务结果里的本地视频路径换成网页能放的地址。"""
     out = dict(res or {})
-    for k in ("video",):
+    for k in ("video", "cover"):
         if out.get(k):
             out[k + "_url"] = media_url(Path(out[k]))
     return out
@@ -546,7 +546,7 @@ def edit_projects() -> list[dict]:
     out = []
     for film in sorted(film_dirs(), key=lambda f: (f / "film.html").stat().st_mtime, reverse=True):
         d = film.parent
-        cover = d / "cover.jpg"
+        cover = d / "cover.jpg" if (d / "cover.jpg").exists() else d / "intro.jpg"      # 开头设计的开头只有 intro.jpg
         out.append({"folder": str(d), "name": d.name, "steps": len(journal.history(film)),
                     "cover": media_url(cover) if cover.exists() else None,
                     "edited": (d / "video_edited.mp4").exists(),
@@ -571,7 +571,7 @@ def edit_exports(folder: str) -> dict:
     import studio
     film = edit_film(folder)
     d = film.parent
-    since = (d / "video.mp4").stat().st_mtime
+    since = (d / "video.mp4").stat().st_mtime if (d / "video.mp4").exists() else (d / "job.json").stat().st_mtime
     files = studio.exports_for(film_title(film), since)
     edited = d / "video_edited.mp4"
     used = edited.stat() if edited.exists() else None      # 选用时是 copy2，大小和修改时间都一样
@@ -583,8 +583,10 @@ def edit_exports(folder: str) -> dict:
 
 
 def is_work_folder(folder: Path) -> bool:
-    """一条成片的文件夹：在项目里或成片保存位置里，并且有 video.mp4。"""
-    return folder.is_dir() and (inside_root(folder) or storage.inside(folder)) and (folder / "video.mp4").exists()
+    """一条成片的文件夹：在项目里或成片保存位置里，并且有 video.mp4；
+    或者有剪辑工程 + job.json（剪辑页导入的文件夹、开头设计出的开头，还没导出成片）。"""
+    return folder.is_dir() and (inside_root(folder) or storage.inside(folder)) and (
+        (folder / "video.mp4").exists() or ((folder / "film" / "film.html").is_file() and (folder / "job.json").is_file()))
 
 
 def readable(p: Path) -> bool:
@@ -610,7 +612,7 @@ PICK_FOLDER_PS = r"""
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 Add-Type -AssemblyName System.Windows.Forms
 $d = New-Object System.Windows.Forms.FolderBrowserDialog
-$d.Description = '选择视频保存位置（每条成片会在这里建一个子文件夹）'
+$d.Description = $(if ($env:QF_DESC) { $env:QF_DESC } else { '选择视频保存位置（每条成片会在这里建一个子文件夹）' })
 $d.ShowNewFolderButton = $true
 if ($env:QF_START -and (Test-Path $env:QF_START)) { $d.SelectedPath = $env:QF_START }
 $owner = New-Object System.Windows.Forms.Form -Property @{ TopMost = $true; ShowInTaskbar = $false }
@@ -618,11 +620,11 @@ if ($d.ShowDialog($owner) -eq [System.Windows.Forms.DialogResult]::OK) { $d.Sele
 """
 
 
-def pick_folder(start: str = "") -> dict:
-    """用 Windows 自带的选择文件夹对话框（服务在本机运行，对话框弹在你的桌面上）。取消时 path 为空。"""
+def pick_folder(start: str = "", desc: str = "") -> dict:
+    """用 Windows 自带的选择文件夹对话框（服务在本机运行，对话框弹在你的桌面上）。取消时 path 为空。desc：对话框上的提示文字。"""
     r = subprocess.run(["powershell", "-NoProfile", "-STA", "-ExecutionPolicy", "Bypass", "-Command", PICK_FOLDER_PS],
                        capture_output=True, text=True, encoding="utf-8", errors="replace",
-                       env={**os.environ, "QF_START": start}, creationflags=0x08000000)
+                       env={**os.environ, "QF_START": start, "QF_DESC": desc}, creationflags=0x08000000)
     return {"path": (r.stdout or "").strip().splitlines()[-1] if (r.stdout or "").strip() else ""}
 
 
@@ -811,7 +813,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self._error(str(e))
         if url.path == "/api/anim/job":
             return self._json(anim_jobs.get(q.get("id", [""])[0], {"status": "missing"}))
-        if url.path == "/api/sections/songs":     # 分段修改：有评论故事的歌
+        if url.path == "/api/sections/songs":     # 分段修改：音轨视频 + 手绘动画 / 3D MV / 以后的新类型（钢琴不分段）
             import section_lib
             return self._json({"songs": section_lib.list_songs(media_url), "llm": __import__("anim_lib").llm_public()})
         if url.path == "/api/sections/list":      # 一首歌的分块（带整片里的缩略图）
@@ -855,6 +857,11 @@ class Handler(BaseHTTPRequestHandler):
         if url.path == "/api/sections/job":
             j = section_jobs.get(q.get("id", [""])[0], {"status": "missing"})
             return self._json({**j, "result": section_media(j.get("result"))} if j.get("result") else j)
+        if url.path == "/api/opener/templates":   # 开头设计：模板库 + 专辑库（拨片图库）+ 聊天接口设置
+            import openers
+            scripts = sorted(p.name for p in (ROOT / "tracks" / "templates" / "opening").iterdir() if p.is_dir())
+            return self._json({"templates": openers.list_templates(), "engines": openers.engine_names(), "scripts": scripts,
+                               "library": flick_library(), "llm": __import__("anim_lib").llm_public()})
         if url.path == "/api/tracks/templates/get":   # 某个模板的某个版本（含说明）
             try:
                 name, ver = template_lib.parse_ref(q.get("ref", [""])[0])
@@ -1135,11 +1142,36 @@ class Handler(BaseHTTPRequestHandler):
                 return self._error(str(e), 412)
             except (ValueError, FileNotFoundError, KeyError, RuntimeError) as e:
                 return self._error(str(e))
+        if url.path.startswith("/api/opener/"):       # 开头设计：出片 / 存模板 / 聊天（自己的 API）/ 交给 Claude 设计新动效（任务用分段修改的队列）
+            import openers
+            name = str(data.get("name", "")).strip()[:24]
+            try:
+                if url.path == "/api/opener/render":
+                    title, artist, ver = str(data.get("title", ""))[:80], str(data.get("artist", ""))[:80], data.get("version")
+                    openers.load(name, ver)
+                    return self._json({"job": section_job("opener", lambda p: openers.render(name, ver, title, artist, p))})
+                if url.path == "/api/opener/save":     # 存成新版本（new_name 给了就存成新模板）
+                    base = openers.load(name)
+                    target = str(data.get("new_name") or name).strip()
+                    ver = openers.save(target, base["engine"], data.get("params") or {}, str(data.get("note", ""))[:300],
+                                       base=base["params"])
+                    return self._json({"name": target, "version": ver, "templates": openers.list_templates()})
+                if url.path == "/api/opener/chat":
+                    return self._json(openers.chat(name, str(data.get("message", "")), data.get("history") or []))
+                if url.path == "/api/opener/claude":
+                    msg = str(data.get("message", "")).strip()
+                    if not msg:
+                        return self._error("先在输入框里写想要什么样的开头")
+                    new_name = str(data.get("new_name", ""))[:24]
+                    return self._json({"job": section_job("opener-claude", lambda p: openers.claude_job(name, msg, new_name, p))})
+                return self._error("没有这个操作", 404)
+            except (ValueError, FileNotFoundError, KeyError, RuntimeError) as e:
+                return self._error(str(e))
         if url.path.startswith("/api/sections/"):     # 分段修改：聊天（自己的 API）/ 采用 / 交给 Claude / 预览 / 出整片
             import section_lib
             stem, sid = safe_name(str(data.get("song", ""))), str(data.get("sid", ""))[:20]
             try:
-                section_lib.song_path(stem)
+                section_lib.check(stem)                     # 歌曲 json（音轨视频）或待上传里的作品文件夹（手绘动画等）
                 if url.path == "/api/sections/chat":
                     return self._json(section_lib.chat(stem, sid, str(data.get("message", "")), data.get("history") or []))
                 if url.path == "/api/sections/apply":       # 采用方案：存版本，然后预览这一块
@@ -1192,6 +1224,14 @@ class Handler(BaseHTTPRequestHandler):
                 return self._error(str(e), 412)
             except (ValueError, FileNotFoundError, KeyError, RuntimeError) as e:
                 return self._error(str(e))
+        if url.path == "/api/edit/import":             # 导入文件夹：选文件夹 → 复制进项目 → 分轨工程（任务用分段修改的队列）
+            import importer
+            folder = str(data.get("path") or "").strip() or pick_folder("", "选择要导入剪辑的文件夹（里面的视频、图片、音频、字幕会分轨放进剪辑器）")["path"]
+            if not folder:
+                return self._json({"cancelled": True})
+            if not Path(folder).is_dir():
+                return self._error("没有这个文件夹")
+            return self._json({"job": section_job("import", lambda p: importer.import_folder(Path(folder), p)), "path": folder})
         if url.path == "/api/edit/adopt":              # 发布时改用剪辑器导出的版本（file 为空 = 改回原成片）
             import studio
             try:
@@ -1208,6 +1248,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._error("找不到这个导出文件")
             target.unlink(missing_ok=True)
             shutil.copy2(src_p, target)
+            if not (d / "video.mp4").exists():             # 导入的工程 / 开头：第一次导出就当它的成片（作品集、发布台、一键发布都认 video.mp4）
+                shutil.copy2(src_p, d / "video.mp4")
             return self._json({"using_edited": True})
         if url.path == "/api/edit/restore":            # 恢复到某一步（恢复本身也记成新的一步）
             import journal

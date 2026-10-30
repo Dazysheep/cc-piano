@@ -80,6 +80,14 @@ pre { margin: 6px 0 0; padding: 10px; border-radius: 10px; background: var(--fil
 .modal label { display: flex; flex-direction: column; gap: 4px; font-size: calc(var(--fs) * .84); color: var(--label-2); }
 .modal input { padding: 8px 10px; border-radius: 10px; border: 1px solid var(--sep); background: var(--fill-2); color: var(--label); font: inherit; }
 .empty { color: var(--label-2); padding: 40px 10px; text-align: center; }
+.song .kind { font-size: calc(var(--fs) * .66); color: var(--accent); }
+.form { display: flex; flex-direction: column; gap: 10px; margin: 10px 0 12px; padding: 12px; border-radius: 12px; background: var(--fill-2); }
+.form label { display: flex; flex-direction: column; gap: 4px; font-size: calc(var(--fs) * .78); color: var(--label-2); }
+.form input, .form select, .form textarea { padding: 7px 10px; border-radius: 10px; border: 1px solid var(--sep); background: var(--bg-2);
+  color: var(--label); font: inherit; font-size: calc(var(--fs) * .86); }
+.form textarea { resize: vertical; min-height: 64px; }
+.form .row { display: flex; gap: 8px; justify-content: flex-end; align-items: center; }
+.form .row small { flex: 1; color: var(--label-2); font-size: calc(var(--fs) * .72); }
 </style>
 </head>
 <body>
@@ -87,8 +95,8 @@ pre { margin: 6px 0 0; padding: 10px; border-radius: 10px; background: var(--fil
   <nav class="col songs" id="songs"><h2>分段修改</h2></nav>
   <section class="col list">
     <h3 id="songTitle">选一首歌</h3>
-    <div class="hint">视频按时间分成几块。点一块，在右边用聊天改它：「发送」用你自己的大模型改参数；要画新画面、新动作就点「交给 Claude」。
-      改完只重新渲染这一块（几十秒到两分钟），满意了再点「出整片」。每次修改都会先存一份历史版本，旧的不会丢。</div>
+    <div class="hint">视频按时间分成几块（手绘动画是一镜一块，也就是关键节点）。点一块，在右边直接改它的设置，或者用聊天改：「发送」用你自己的大模型改参数；
+      要画新画面、新动作就点「交给 Claude」。改完只重新渲染这一块（几十秒到两分钟），满意了再点「出整片」。每次修改都会先存一份历史版本，旧的不会丢。</div>
     <div class="bar"><button class="btn primary" id="buildBtn" type="button" disabled>出整片（约 35 分钟）</button>
       <span class="state" id="buildState"></span></div>
     <div class="secs" id="secs"></div>
@@ -126,21 +134,23 @@ async function api(path, body) {
   if (!r.ok || j.error) throw new Error(j.error || "出错了");
   return j;
 }
-const KIND_ZH = { opening: "开头", card: "评论", moment: "小动画", solo: "只听一轨", finale: "尾声", ending: "结尾", song: "整体" };
+const KIND_ZH = { opening: "开头", card: "评论", moment: "小动画", solo: "只听一轨", finale: "尾声", ending: "结尾", song: "整体",
+  shot: "镜头 · 关键节点", seg: "片段", opener: "开头模板" };
 let SONGS = [], LLM = {}, stem = null, DATA = null, sel = null, chats = {}, previews = {};
 
 function renderSongs() {
   const s = SONGS.find((x) => x.stem === stem);
   $("songs").innerHTML = "<h2>分段修改</h2>" + SONGS.map((x) =>
     `<button class="song${x.stem === stem ? " on" : ""}" data-s="${esc(x.stem)}" type="button">${x.cover ? `<img src="${x.cover}" alt="">` : "<i></i>"}
-      <span><b>${esc(x.title)}</b><small>${esc(x.artist)}</small></span></button>`).join("") +
+      <span><b>${esc(x.title)}</b><small>${esc(x.artist)}</small>${x.kind ? `<span class="kind">${esc(x.kind)}</span>` : ""}</span></button>`).join("") +
     (s && DATA && DATA.song.versions.length ? `<h4>历史版本（每次修改前自动保存）</h4>` + DATA.song.versions.slice().reverse().map((v) =>
       `<div class="ver"><span>v${v}</span><button class="btn" data-restore="${v}" type="button">回到这版</button></div>`).join("") : "");
 }
 function renderSecs() {
   if (!DATA) { $("secs").innerHTML = ""; return; }
-  $("songTitle").textContent = `${DATA.song.title} · ${DATA.song.artist}`;
-  $("buildBtn").disabled = false;
+  $("songTitle").textContent = `${DATA.song.title} · ${DATA.song.artist}${DATA.song.kind ? `（${DATA.song.kind}）` : ""}`;
+  $("buildBtn").disabled = DATA.song.can_build === false;
+  $("buildBtn").textContent = DATA.song.build_label || "出整片（约 35 分钟）";
   $("secs").innerHTML = DATA.sections.map((s, i) => {
     const r = s.range ? `${fmt(s.range[0])}–${fmt(s.range[1])}` : "全片";
     const pic = s.thumb ? `<img src="${s.thumb}" alt="" loading="lazy">` : `<small>${s.kind === "song" ? "标题 · 文案 · 字号" : "还没有整片"}</small>`;
@@ -158,8 +168,33 @@ async function loadSong(s) {
   setChat(false);
 }
 function setChat(on) {
-  $("chatIn").disabled = $("sendBtn").disabled = $("claudeBtn").disabled = !on;
+  $("chatIn").disabled = $("sendBtn").disabled = !on;
+  $("claudeBtn").disabled = !on || (DATA && DATA.song.can_claude === false) || (sel && sel.kind === "song" && DATA.song.mode !== "story");
   $("prevBtn").disabled = !on || !sel || !sel.range;
+}
+// 有 fields 的块（手绘动画的镜头、片段、整体）：直接在表单里改，保存 = 采用（先存历史版本，再预览这一块）
+function formHtml(s) {
+  if (!s.fields) return "";
+  const v = s.data || {};
+  const input = (f) => {
+    const val = v[f.key];
+    if (f.type === "textarea") return `<textarea data-k="${f.key}" maxlength="${f.max || 600}">${esc(val)}</textarea>`;
+    if (f.type === "select") return `<select data-k="${f.key}">${f.options.map(([k, zh]) => `<option value="${esc(k)}"${k === val ? " selected" : ""}>${esc(zh)}</option>`).join("")}</select>`;
+    if (f.type === "number") return `<input data-k="${f.key}" type="number" step="${f.step || .01}" value="${esc(val)}">`;
+    if (f.type === "tags") return `<input data-k="${f.key}" data-tags="1" value="${esc((val || []).join(" "))}">`;
+    return `<input data-k="${f.key}" maxlength="${f.max || 60}" value="${esc(val)}">`;
+  };
+  return `<div class="form" id="editForm">${s.fields.map((f) => `<label>${esc(f.label)}${input(f)}</label>`).join("")}
+    <div class="row"><small>保存前会自动存一份历史版本${s.range ? "，然后渲染这一块的预览" : ""}</small>
+      <button class="btn primary" id="formSave" type="button">保存修改</button></div></div>`;
+}
+function formData() {
+  const out = {};
+  document.querySelectorAll("#editForm [data-k]").forEach((el) => {
+    out[el.dataset.k] = el.dataset.tags ? el.value.replace(/#/g, " ").split(/\s+/).filter(Boolean)
+      : el.type === "number" ? +el.value : el.value;
+  });
+  return out;
 }
 function msgsFor(id) { return (chats[stem + "|" + id] = chats[stem + "|" + id] || { html: [], history: [] }); }
 function select(i) {
@@ -180,8 +215,10 @@ function showDetail() {
   else media = `<div class="empty">${sel.range ? "还没有整片，点「预览这一块」" : "「整体」改完后出整片看效果"}</div>`;
   $("dBody").innerHTML = `<div class="big">${media}</div>
     <div class="meta">${p ? "上面是这一块修改后的预览（720p，带音乐）。" : sel.range ? "上面是整片里的这一段（最近一次出的整片）。" : ""}
-    ${esc(sel.sub)}</div>
-    <details open><summary>这一块现在的设置（聊天改的就是它）</summary><pre>${esc(JSON.stringify(sel.data, null, 1))}</pre></details>`;
+    ${esc(sel.sub)}</div>${formHtml(sel)}
+    <details${sel.fields ? "" : " open"}><summary>这一块现在的设置（聊天改的就是它）</summary><pre>${esc(JSON.stringify(sel.data, null, 1))}</pre></details>`;
+  const save = $("formSave");
+  if (save) save.addEventListener("click", () => adopt(sel, formData(), $("editForm")));
 }
 function addMsg(cls, html) {
   const c = msgsFor(sel.id);
@@ -247,18 +284,19 @@ $("chatForm").addEventListener("submit", async (e) => {
 $("chatIn").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("chatForm").requestSubmit(); } });
 
 async function adopt(it, data, box) {
-  const b = box.querySelector("button");
+  const b = box.querySelector("button.primary") || box.querySelector("button"), label = b.textContent;
   b.disabled = true; b.textContent = "保存中…";
   try {
     const r = await api("/api/sections/apply", { song: stem, sid: it.id, data });
     b.textContent = `已采用（改之前存为历史 v${r.history}）`;
+    addMsg("sys", `已保存「${esc(it.title)}」（改之前存为历史 v${r.history}）。`);
     if (r.job) {
       const st = addMsg("sys", "正在渲染这一块…");
       await runPreview(r.job, st, "正在渲染这一块");
       st.textContent = "这一块的预览好了，在上面播放。";
     }
     await refresh();
-  } catch (err) { b.disabled = false; b.textContent = "采用（先存历史版本，再预览这一块）"; addMsg("sys", esc(err.message)); }
+  } catch (err) { b.disabled = false; b.textContent = label; addMsg("sys", esc(err.message)); }
 }
 $("claudeBtn").addEventListener("click", async () => {
   const text = $("chatIn").value.trim();
@@ -291,7 +329,7 @@ $("prevBtn").addEventListener("click", async () => {
   $("prevBtn").disabled = false;
 });
 $("buildBtn").addEventListener("click", async () => {
-  if (!stem || !confirm("用现在的设置重新出整片（约 35 分钟，期间别的预览会排队）。继续？")) return;
+  if (!stem || !confirm(`用现在的设置重新出整片：${DATA.song.build_label || "约 35 分钟"}，期间别的预览会排队。继续？`)) return;
   $("buildBtn").disabled = true;
   try {
     const r = await api("/api/sections/build", { song: stem });
@@ -339,7 +377,7 @@ api("/api/sections/songs").then((j) => {
     const i = wantSel ? DATA.sections.findIndex((s) => s.id === wantSel) : -1;
     if (i >= 0) select(i);
   });
-  else $("secs").innerHTML = '<div class="empty">还没有带评论故事的歌。</div>';
+  else $("secs").innerHTML = '<div class="empty">还没有能分段修改的视频（出过整片的音轨视频、手绘动画等都会出现在这里）。</div>';
 }).catch((e) => { $("secs").innerHTML = `<div class="empty">${esc(e.message)}</div>`; });
 </script>
 </body>

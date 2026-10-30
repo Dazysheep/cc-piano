@@ -11,7 +11,7 @@
       icon: S('<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M8 5v8M12 5v8M16 5v8"/>') },
     { key: "tracks", title: "音轨剪辑", src: "/tracks", group: "创作", kbd: "2",
       icon: S('<path d="M4 9v6M8 6v12M12 9v6M16 4v16M20 8v8"/>', 'stroke-linecap="round"') },
-    { key: "flick", title: "拨片开头", src: "/flick", group: "创作", kbd: "3",
+    { key: "flick", title: "开头设计", src: "/flick", group: "创作", kbd: "3",
       icon: S('<rect x="6" y="7" width="12" height="12" rx="2.5"/><path d="M8 4h8M10 1.8h4" stroke-linecap="round"/>') },
     { key: "edit", title: "剪辑", src: "/edit", group: "创作", kbd: "7",
       icon: S('<circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M8 7.5 20 16M8 16.5 20 8"/>', 'stroke-linecap="round"') },
