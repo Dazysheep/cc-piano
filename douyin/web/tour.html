@@ -169,7 +169,7 @@ async function select(folder) {
   let d;
   try { d = await api("/api/publish/defaults?folder=" + encodeURIComponent(folder)); } catch (e) { return toast(e.message, true); }
   $("#meta").textContent = d.has_vertical ? "竖屏版已生成，抖音、小红书、视频号、快手会用竖屏版。"
-    : d.has_job ? "竖屏平台需要竖屏版，开始发布时会先自动生成（音轨作品只有横屏版，会直接用横屏版）。"
+    : d.has_job ? "竖屏平台需要竖屏版，开始发布时会先自动生成（音轨作品和手绘动画只有横屏版，会直接用横屏版）。"
     : "这条成片缺少生成参数，竖屏平台会直接使用横屏版。";
   const chosen = prefs(), box = $("#program");
   box.innerHTML = "";

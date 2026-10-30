@@ -37,7 +37,7 @@ def main() -> Path:
         run(["-framerate", "12", "-i", str(FRAMES / "f%04d.jpg"), "-vf", f"fps=30,trim=0:{DUR},format=yuv420p",
              "-c:v", "libx264", "-preset", "slow", "-crf", "17", "-pix_fmt", "yuv420p", str(picture)])
         run(["-t", str(DUR), "-i", str(SRC), "-af", f"afade=t=out:st={DUR - 2.2}:d=2.2", "-ar", "48000", "-ac", "2", str(mix)])
-        r = subprocess.run(["bash", "-lc", '. /d/cc-engine/filmlab/env.sh && cd "$LIB" && sh core/render/mux.sh '
+        r = subprocess.run(["bash", "-lc", '. /d/cc-engine/filmlab/env.sh && cd "$LIB" && LEMO_COLOR=bt709 sh core/render/mux.sh '
                             f'"{picture.as_posix()}" "{mix.as_posix()}" "{film.as_posix()}" 30 0'],
                            capture_output=True, text=True, encoding="utf-8", errors="replace")
         print(r.stdout[-600:], r.stderr[-600:])

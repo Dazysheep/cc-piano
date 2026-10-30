@@ -49,7 +49,7 @@ def main() -> Path:
              "-filter_complex", fc, "-map", "[v]", "-c:v", "libx264", "-preset", "slow", "-crf", "16", "-pix_fmt", "yuv420p", str(picture)])
         run(["-ss", str(START), "-t", str(DUR), "-i", str(WORK / "source.wav"),
              "-af", "afade=t=in:d=0.3,afade=t=out:st=82.3:d=2.2", "-ar", "48000", "-ac", "2", str(mix)])
-        r = subprocess.run(["bash", "-lc", '. /d/cc-engine/filmlab/env.sh && cd "$LIB" && sh core/render/mux.sh '
+        r = subprocess.run(["bash", "-lc", '. /d/cc-engine/filmlab/env.sh && cd "$LIB" && LEMO_COLOR=bt709 sh core/render/mux.sh '
                             f'"{picture.as_posix()}" "{mix.as_posix()}" "{film.as_posix()}" 30 0'],
                            capture_output=True, text=True, encoding="utf-8", errors="replace")
         print(r.stdout[-800:], r.stderr[-800:])

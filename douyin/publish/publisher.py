@@ -45,8 +45,10 @@ def ensure_vertical(folder: Path) -> Path:
         emit("vertical", "这条成片缺少生成参数，竖屏平台改用横屏版", pct=1)
         return folder / "video.mp4"
     job = json.loads(job_file.read_text(encoding="utf-8"))
-    if job.get("kind") == "tracks":                # 音轨剪辑作品只有横屏版
-        emit("vertical", "音轨作品只有横屏版，竖屏平台也发横屏版", pct=1)
+    kind = job.get("kind") or "piano"
+    if kind != "piano":                            # 竖屏版只有钢琴作品能用 piano/render.py 重渲；音轨 / 手绘动画 / 以后的新类型都发横屏版
+        name = {"tracks": "音轨作品", "lyricfilm": "手绘动画"}.get(kind, "这类作品")
+        emit("vertical", f"{name}只有横屏版，竖屏平台也发横屏版", pct=1)
         return folder / "video.mp4"
     job.update(vertical=True, deliver_dir=str(folder), preview=None)
     tmp = folder / "_vertical_job.json"
@@ -75,6 +77,67 @@ def ensure_vertical(folder: Path) -> Path:
 
 
 # ---------------------------------------------------------------- 页面工具（会搜索所有 iframe）
+# ---------------------------------------------------------------- 平台通用格式
+# 抖音等平台的网页上传只稳定接受「普通」的 H.264：yuv420p（电视范围）、level ≤ 4.2、AAC。
+# 手绘 / 3D 动画经 lemo-opuscar 的 mux.sh 出来是 yuvj420p（JPEG 全范围）+ level 5.0，抖音上传会失败（2026-10-30）。
+# 发布前检查一遍，不合格的转一份 <名字>_publish.mp4（视频没变就复用），原片不动。
+FF_BIN = next((ROOT / "tools" / "ffmpeg").glob("*/bin"), None)
+
+
+def probe(video: Path) -> dict:
+    out = subprocess.run([str(FF_BIN / "ffprobe.exe"), "-v", "error", "-show_entries",
+                          "stream=codec_type,codec_name,pix_fmt,level,color_range,avg_frame_rate", "-of", "json", str(video)],
+                         capture_output=True, text=True, encoding="utf-8", errors="replace")
+    streams = json.loads(out.stdout or "{}").get("streams", [])
+    v = next((s for s in streams if s.get("codec_type") == "video"), {})
+    a = next((s for s in streams if s.get("codec_type") == "audio"), {})
+    num, _, den = (v.get("avg_frame_rate") or "0/1").partition("/")
+    return {"vcodec": v.get("codec_name"), "pix_fmt": v.get("pix_fmt"), "level": int(v.get("level") or 0),
+            "range": v.get("color_range"), "fps": float(num) / float(den or 1) if float(den or 1) else 0, "acodec": a.get("codec_name")}
+
+
+def compat_problems(info: dict) -> list[str]:
+    bad = []
+    if info["vcodec"] != "h264":
+        bad.append(f"视频编码 {info['vcodec']}")
+    if info["pix_fmt"] != "yuv420p" or info["range"] == "pc":
+        bad.append(f"色彩格式 {info['pix_fmt']}（{info['range'] or '未标注'}范围）")
+    if info["level"] > 42:
+        bad.append(f"H.264 level {info['level'] / 10:.1f}")
+    if info["fps"] > 60.5:
+        bad.append(f"帧率 {info['fps']:.0f}")
+    if info["acodec"] not in ("aac", None):
+        bad.append(f"音频编码 {info['acodec']}")
+    return bad
+
+
+def ensure_compatible(video: Path) -> Path:
+    if FF_BIN is None:
+        return video
+    info = probe(video)
+    bad = compat_problems(info)
+    if not bad:
+        return video
+    out = video.with_name(video.stem + "_publish.mp4")
+    if out.exists() and out.stat().st_mtime >= video.stat().st_mtime and not compat_problems(probe(out)):
+        return out
+    emit("vertical", f"{video.name} 不是平台通用格式（{'、'.join(bad)}），正在转换", pct=0)
+    tmp = out.with_suffix(".part.mp4")
+    full = "yuvj" in (info["pix_fmt"] or "") or info["range"] == "pc"           # 全范围 → 电视范围（不然颜色发灰 / 发艳）
+    vf = ("scale=in_range=full:out_range=tv," if full else "") + "format=yuv420p" + (",fps=60" if info["fps"] > 60.5 else "")
+    r = subprocess.run([str(FF_BIN / "ffmpeg.exe"), "-y", "-loglevel", "error", "-i", str(video), "-vf", vf,
+                        "-c:v", "libx264", "-profile:v", "high", "-level:v", "4.2", "-preset", "medium", "-crf", "18",
+                        "-maxrate", "20M", "-bufsize", "40M", "-color_range", "tv", "-colorspace", "bt709", "-color_primaries", "bt709",
+                        "-color_trc", "bt709", "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-movflags", "+faststart", str(tmp)],
+                       capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if r.returncode or not tmp.exists():
+        tmp.unlink(missing_ok=True)
+        raise RuntimeError("转成平台通用格式失败：" + r.stderr[-300:])
+    tmp.replace(out)
+    emit("vertical", f"已转成平台通用格式（{out.name}）", pct=1)
+    return out
+
+
 def _frames(page):
     try:
         return page.frames
@@ -314,6 +377,7 @@ def main() -> int:
             videos[True] = videos[False]
         elif any(PLATFORMS[k].vertical for k in chosen):
             videos[True] = ensure_vertical(folder)
+        videos = {k: ensure_compatible(v) for k, v in videos.items()}   # 不管哪条流程做的视频，上传前都转成平台通用格式
     except Exception as e:
         emit("error", str(e))
         return 1
