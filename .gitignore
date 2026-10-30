@@ -45,6 +45,9 @@ douyin/editor/
 douyin/.venv/
 filmlab/
 
+# --- 大型可执行文件 ---
+*.exe
+
 # --- 生成产物 ---
 douyin/output/
 douyin/assets/clawd/
