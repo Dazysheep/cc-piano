@@ -33,7 +33,7 @@ import build  # noqa: E402
 FF = next((ROOT / "tools" / "ffmpeg").glob("*/bin/ffmpeg.exe"))
 TMP = Path(r"D:\cc-engine\.tmp\handdrawn\layers")
 FPS = 12
-FG = ["male", "others", "props", "trans"]
+FG = ["male", "others", "props", "trans"]                         # 默认前景层；歌曲的 film_data 里有 tracks 时以它为准
 ZH = {"bg": "背景", "male": "人物 · 男主 CC", "others": "人物 · 其他角色（女主 / 路人 / 妈妈 / 猫）", "props": "道具（纸飞机 / 对话气泡 / 符号）",
       "subs": "字幕（歌词逐字）", "trans": "转场动画", "vocals": "人声", "accomp": "伴奏"}
 
@@ -43,13 +43,20 @@ def film_data(song: str) -> dict:
     return json.loads(s[s.index("{"): s.rindex("}") + 1])
 
 
+# 每首歌可以在 film_data 里自己定轨道（tracks：从上到下）和轨道名（zh），没写就用上面的默认
+DEFAULT_TRACKS = ["trans", "subs", "props", "male", "others", "bg", "vocals", "accomp"]
+tracks_of = lambda d: d.get("tracks") or DEFAULT_TRACKS                                       # noqa: E731
+fg_of = lambda d: [t for t in tracks_of(d) if t not in ("subs", "bg", "vocals", "accomp")]    # noqa: E731
+zh_of = lambda d: {**ZH, **(d.get("zh") or {})}                                               # noqa: E731
+
+
 # ---------------------------------------------------------------- 渲染
 def jobs(song: str, dur: float) -> list[list[str]]:
     """每个渲染任务：(层, 底色, 起, 止)。背景最重，切三段；前景层各两遍。"""
     out = []
-    for a, b in ((0, 90), (90, 180), (180, dur + .1)):
-        out.append(["bg", "", str(a), str(b)])
-    for layer in FG:
+    for k in range(3):
+        out.append(["bg", "", f"{dur * k / 3:.2f}", f"{dur * (k + 1) / 3 + (.1 if k == 2 else 0):.2f}"])
+    for layer in fg_of(film_data(song)):
         for matte in ("black", "white"):
             out.append([layer, matte, "0", str(dur + .1)])
     return out
@@ -165,7 +172,7 @@ def subtitle_pages(film_dir: Path, d: dict, cap: float) -> list[dict]:
         doc = "\n".join([
             '<!doctype html>', '<html lang="zh-CN">', '<head>', '<meta charset="utf-8">', f'<title>{html.escape(texts[0])}</title>',
             '<link rel="stylesheet" href="subtitle.css">', '</head>', f'<body class="{cls}">', '<div id="wrap">',
-            f'<p id="line" data-times="{json.dumps(times)}" data-dur="{round(ln["e"] - a, 3)}" data-len="{round(b - a, 3)}" data-size="64">{body}</p>',
+            f'<p id="line" data-times="{json.dumps(times)}" data-dur="{round(ln["e"] - a, 3)}" data-len="{round(b - a, 3)}" data-size="{d.get('sub_size', 64)}">{body}</p>',
             '<p id="hi" aria-hidden="true"></p>', '</div>', '<script src="subtitle.js"></script>', '</body>', '</html>', ''])
         (pages / f"sub_{k:02d}.html").write_text(doc, encoding="utf-8")
         out.append({"id": f"sub_{k:02d}", "src": f"pages/sub_{k:02d}.html", "a": round(a, 3), "b": round(b, 3), "x": x, "y": y, "text": " / ".join(texts)})
@@ -187,12 +194,16 @@ def film_html(song: str, title: str, d: dict, dur: float, sub_pages: list[dict])
             f'style="left: {p["x"]}px; top: {p["y"]}px; width: {BOX_W}px; height: {BOX_H}px"></iframe>' for p in sub_pages]
     trans = [clip("video", f"trans_{i:02d}", "assets/trans.webm", max(0, s["from"] - .2), end(s["from"] + .2), s["tr"])
              for i, s in enumerate(shots) if i > 0]
-    secs = [0.0] + [s["from"] for s in shots if s["lines"][0] in (1, 26, 34, 50, 58, 81, 999)] + [dur]
+    if d.get("audio_cuts"):                                     # 人声 / 伴奏按段落切的位置（film_data 里给）
+        secs = [min(x, dur) for x in d["audio_cuts"]] + [dur]
+    else:                                                       # 《数星星》：按段落开头那几句
+        secs = [0.0] + [s["from"] for s in shots if s["lines"][0] in (1, 26, 34, 50, 58, 81, 999)] + [dur]
     secs = sorted(set(round(x, 3) for x in secs))
     audio_clips = lambda name: [clip("audio", f"{name}_{i}", f"assets/{name}.wav", a, end(b)) for i, (a, b) in enumerate(zip(secs, secs[1:])) if b - a > .3]   # noqa: E731
-    tracks = [("trans", trans), ("subs", subs), ("props", per_shot("props")), ("male", per_shot("male")),
-              ("others", per_shot("others")), ("bg", per_shot("bg", ext="mp4")), ("vocals", audio_clips("vocals")), ("accomp", audio_clips("accomp"))]
-    body = "\n".join(f'<section title="{html.escape(ZH[name])}" data-layer="{name}">\n' + "\n".join(cl) + "\n</section>" for name, cl in tracks)
+    special = {"trans": trans, "subs": subs, "bg": per_shot("bg", ext="mp4"), "vocals": audio_clips("vocals"), "accomp": audio_clips("accomp")}
+    tracks = [(name, special[name] if name in special else per_shot(name)) for name in tracks_of(d)]
+    zh = zh_of(d)
+    body = "\n".join(f'<section title="{html.escape(zh[name])}" data-layer="{name}">\n' + "\n".join(cl) + "\n</section>" for name, cl in tracks)
     return (f'<!doctype html>\n<html>\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=1920, height=1080">\n'
             f'<title>{html.escape(title)}</title>\n</head>\n<body>\n{body}\n</body>\n</html>\n')
 
@@ -207,7 +218,7 @@ def build_project(song: str, work_folder: Path, title: str, work: Path) -> Path:
     try:
         encode_bg(song, assets / "bg.mp4")
         print("背景 ok", flush=True)
-        for layer in FG:
+        for layer in fg_of(d):
             encode_matte(song, layer, n, assets / f"{layer}.webm")
             print(layer, "ok", flush=True)
         audio(work, assets, dur)
